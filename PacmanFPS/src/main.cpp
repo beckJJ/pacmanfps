@@ -46,6 +46,7 @@
 // Headers locais, definidos na pasta "include/"
 #include "utils.h"
 #include "matrices.h"
+#include "colisions.h"
 
 // Estrutura que representa um modelo geométrico carregado a partir de um
 // arquivo ".obj". Veja https://en.wikipedia.org/wiki/Wavefront_.obj_file .
@@ -109,6 +110,7 @@ void TextRendering_ShowModelViewProjection(GLFWwindow* window, glm::mat4 project
 void TextRendering_ShowEulerAngles(GLFWwindow* window);
 void TextRendering_ShowProjection(GLFWwindow* window);
 void TextRendering_ShowFramesPerSecond(GLFWwindow* window);
+void TextRendering_ShowPositionCamera(GLFWwindow* window);
 
 // Funções callback para comunicação com o sistema operacional e interação do
 // usuário. Veja mais comentários nas definições das mesmas, abaixo.
@@ -229,7 +231,7 @@ double g_LastCursorPosX, g_LastCursorPosY;
 
 // Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
 // Veja slides 195-227 e 229-234 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
-glm::vec4 camera_position_c  = glm::vec4(0.0f, 30.0f, g_CameraDistance, 1.0f); // Ponto "c", centro da câmera
+glm::vec4 camera_position_c  = glm::vec4(0.0f, 20.0f, g_CameraDistance, 1.0f); // Ponto "c", centro da câmera
 
 // Ajuste para posicionar os ghosts nas posições corretas do mapa
 glm::vec4 adjust_position_ghosts = glm::vec4(5.0f, 0.0f, 3.5f, 0.0f);
@@ -312,12 +314,12 @@ int main(int argc, char* argv[])
     LoadShadersFromFiles();
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
-    /*
+
     ObjModel spheremodel("../../data/sphere.obj");
     ComputeNormals(&spheremodel);
     BuildTrianglesAndAddToVirtualScene(&spheremodel);
 
-
+    /*
     ObjModel bunnymodel("../../data/bunny.obj");
     ComputeNormals(&bunnymodel);
     BuildTrianglesAndAddToVirtualScene(&bunnymodel);
@@ -391,25 +393,43 @@ int main(int argc, char* argv[])
         prev_time = current_time;
 
         // Vetor que projeta w no plano X,Z, evitando que a camera oscile de altura
-        glm::vec4 projected_w  = glm::vec4(vetor_w.x, vetor_w.y, vetor_w.z, vetor_w.w); // usado quando se quer andar livremente pelo mapa, podendo subir e descer na altura
-        //glm::vec4 projected_w  = glm::vec4(vetor_w.x, 0.0f, vetor_w.z, vetor_w.w);    // usado para andar na altura certa no labirinto, não podendo mudar a altura
+       // glm::vec4 projected_w  = glm::vec4(vetor_w.x, vetor_w.y, vetor_w.z, vetor_w.w); // usado quando se quer andar livremente pelo mapa, podendo subir e descer na altura
+        glm::vec4 projected_w  = glm::vec4(vetor_w.x, 0.0f, vetor_w.z, vetor_w.w);    // usado para andar na altura certa no labirinto, não podendo mudar a altura
 
         // Realiza movimentação de objetos
-        if (tecla_W_pressionada)
+        if (tecla_W_pressionada) {
             // Movimenta câmera para frente
-            camera_position_c += -projected_w * speed * delta_t;
+            glm::vec4 new_position = camera_position_c + -vetor_w * speed * delta_t;
+            // glm::vec4 new_position = camera_position_c + -projected_w * speed * delta_t;
+            if (!ColisionMaze(new_position)) {
+                camera_position_c = new_position;
+            }
+        }
 
-        if (tecla_A_pressionada)
+        if (tecla_A_pressionada) {
             // Movimenta câmera para esquerda
-            camera_position_c += -vetor_u * speed * delta_t;
+            glm::vec4 new_position = camera_position_c + -vetor_u * speed * delta_t;
+            if (!ColisionMaze(new_position)) {
+                camera_position_c = new_position;
+            }
+        }
 
-        if (tecla_S_pressionada)
+        if (tecla_S_pressionada) {
             // Movimenta câmera para trás
-            camera_position_c += projected_w * speed * delta_t;
+            glm::vec4 new_position = camera_position_c + vetor_w * speed * delta_t;
+            // glm::vec4 new_position = camera_position_c + projected_w * speed * delta_t;
+            if (!ColisionMaze(new_position)) {
+                camera_position_c = new_position;
+            }
+        }
 
-        if (tecla_D_pressionada)
+        if (tecla_D_pressionada) {
             // Movimenta câmera para direita
-            camera_position_c += vetor_u * speed * delta_t;
+            glm::vec4 new_position = camera_position_c + vetor_u * speed * delta_t;
+            if (!ColisionMaze(new_position)) {
+                camera_position_c = new_position;
+            }
+        }
 
         float v_x = cos(g_CameraPhi) * sin(g_CameraTheta);
         float v_y = sin(g_CameraPhi);
@@ -468,13 +488,13 @@ int main(int argc, char* argv[])
         #define GHOST_INKY   6
         #define GHOST_PINKY  7
 
-        /*
+
         // Desenhamos o modelo da esfera
-        model = Matrix_Translate(-1.0f,0.0f,0.0f);
+        model = Matrix_Translate(camera_position_c.x,1.0f,camera_position_c.z);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(object_id_uniform, SPHERE);
         DrawVirtualObject("sphere");
-
+/*
         // Desenhamos o modelo do coelho
         model = Matrix_Translate(1.0f,0.0f,0.0f)
               * Matrix_Rotate_Z(g_AngleZ)
@@ -569,7 +589,9 @@ int main(int argc, char* argv[])
 
         // Imprimimos na tela os ângulos de Euler que controlam a rotação do
         // terceiro cubo.
-        TextRendering_ShowEulerAngles(window);
+        //TextRendering_ShowEulerAngles(window);
+
+        TextRendering_ShowPositionCamera(window);
 
         // Imprimimos na informação sobre a matriz de projeção sendo utilizada.
         TextRendering_ShowProjection(window);
@@ -601,6 +623,7 @@ int main(int argc, char* argv[])
     // Fim do programa
     return 0;
 }
+
 
 // Função que inicializa os ghosts e os devidos checkpoints dos mesmos
 void InitGhost() {
@@ -1288,22 +1311,22 @@ void FramebufferSizeCallback(GLFWwindow* window, int width, int height)
 // Função callback chamada sempre que o usuário aperta algum dos botões do mouse
 void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
-    //if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
-    //{
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+    {
         // Se o usuário pressionou o botão esquerdo do mouse, guardamos a
         // posição atual do cursor nas variáveis g_LastCursorPosX e
         // g_LastCursorPosY.  Também, setamos a variável
         // g_LeftMouseButtonPressed como true, para saber que o usuário está
         // com o botão esquerdo pressionado.
         glfwGetCursorPos(window, &g_LastCursorPosX, &g_LastCursorPosY);
-        //g_LeftMouseButtonPressed = true;
-    //}
-    //if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
-    //{
+        g_LeftMouseButtonPressed = true;
+    }
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
+    {
         // Quando o usuário soltar o botão esquerdo do mouse, atualizamos a
         // variável abaixo para false.
-    //    g_LeftMouseButtonPressed = false;
-    //}
+        g_LeftMouseButtonPressed = false;
+    }
     if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
     {
         // Se o usuário pressionou o botão esquerdo do mouse, guardamos a
@@ -1348,14 +1371,14 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
     // parâmetros que definem a posição da câmera dentro da cena virtual.
     // Assim, temos que o usuário consegue controlar a câmera.
 
-    //if (g_LeftMouseButtonPressed)
-    //{
+    if (g_LeftMouseButtonPressed)
+    {
         // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
         float dx = xpos - g_LastCursorPosX;
         float dy = ypos - g_LastCursorPosY;
 
         // Atualizamos parâmetros da câmera com os deslocamentos
-        g_CameraTheta -= 0.01f*dx;
+        g_CameraTheta += 0.01f*dx;
         g_CameraPhi   += 0.01f*dy;
 
         // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
@@ -1372,7 +1395,7 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
         // cursor como sendo a última posição conhecida do cursor.
         g_LastCursorPosX = xpos;
         g_LastCursorPosY = ypos;
-    //}
+    }
 
     if (g_RightMouseButtonPressed)
     {
@@ -1658,6 +1681,20 @@ void TextRendering_ShowEulerAngles(GLFWwindow* window)
 
     char buffer[80];
     snprintf(buffer, 80, "Euler Angles rotation matrix = Z(%.2f)*Y(%.2f)*X(%.2f)\n", g_AngleZ, g_AngleY, g_AngleX);
+
+    TextRendering_PrintString(window, buffer, -1.0f+pad/10, -1.0f+2*pad/10, 1.0f);
+}
+
+void TextRendering_ShowPositionCamera(GLFWwindow* window)
+{
+    if (!g_ShowInfoText) {
+        return;
+    }
+
+    float pad = TextRendering_LineHeight(window);
+
+    char buffer[80];
+    snprintf(buffer, 80, "Camera position: X = %.2f Y = %.2f Z = %.2f\n", camera_position_c.x, camera_position_c.y, camera_position_c.z);
 
     TextRendering_PrintString(window, buffer, -1.0f+pad/10, -1.0f+2*pad/10, 1.0f);
 }
