@@ -6,14 +6,14 @@ int ColisionMaze(glm::vec4 camera_position)
 {
     // criar um "cubo" de tamanho 1 ao redor da câmera
     // definindo os 8 vertices do cubo
-    glm::vec4 camera_points[8] = {camera_position + glm::vec4( 0.5, 0.5, 0.5,0.0f),
-                                  camera_position + glm::vec4( 0.5, 0.5,-0.5,0.0f),
-                                  camera_position + glm::vec4( 0.5,-0.5, 0.5,0.0f),
-                                  camera_position + glm::vec4( 0.5,-0.5,-0.5,0.0f),
-                                  camera_position + glm::vec4(-0.5, 0.5, 0.5,0.0f),
-                                  camera_position + glm::vec4(-0.5, 0.5,-0.5,0.0f),
-                                  camera_position + glm::vec4(-0.5,-0.5, 0.5,0.0f),
-                                  camera_position + glm::vec4(-0.5,-0.5,-0.5,0.0f)};
+    glm::vec4 camera_points[8] = {camera_position + glm::vec4( 1.0, 1.0, 1.0,1.0f),
+                                  camera_position + glm::vec4( 1.0, 1.0,-1.0,1.0f),
+                                  camera_position + glm::vec4( 1.0,-1.0, 1.0,1.0f),
+                                  camera_position + glm::vec4( 1.0,-1.0,-1.0,1.0f),
+                                  camera_position + glm::vec4(-1.0, 1.0, 1.0,1.0f),
+                                  camera_position + glm::vec4(-1.0, 1.0,-1.0,1.0f),
+                                  camera_position + glm::vec4(-1.0,-1.0, 1.0,1.0f),
+                                  camera_position + glm::vec4(-1.0,-1.0,-1.0,1.0f)};
 
     // nomes definidos conforme imagem em nomes_labirinto.png
     // colisão com R1

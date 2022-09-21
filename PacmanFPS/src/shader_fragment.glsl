@@ -21,6 +21,7 @@ uniform mat4 projection;
 #define GHOST_CLYDE  5
 #define GHOST_INKY   6
 #define GHOST_PINKY  7
+#define POINT        8
 
 uniform int object_id;
 
@@ -133,6 +134,14 @@ void main()
         // Propriedades espectrais do plano
         //Kd = vec3(0.8,0.4,0.08);
         Kd = vec3(0.96,0.54,0.75);
+        Ks = vec3(0.0,0.0,0.0);
+        //Ka = vec3(0.4,0.2,0.04);
+        Ka = vec3(0.48,0.27,0.37);
+        q = 20.0;
+    }
+    else if ( object_id == POINT )
+    {
+        Kd = vec3(1.0, 1.0, 1.0);
         Ks = vec3(0.0,0.0,0.0);
         //Ka = vec3(0.4,0.2,0.04);
         Ka = vec3(0.48,0.27,0.37);

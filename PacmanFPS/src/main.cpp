@@ -145,7 +145,22 @@ struct Ghost
     glm::vec4    positions[30];  // array de pontos do mapa que o ghost deverá passar
 };
 
+struct PointsHall
+{
+    int id;
+    glm::vec4 hall_begin;
+    glm::vec4 hall_end;
+};
+
+struct Point
+{
+    int       id;       // identificador do Point
+    glm::vec4 position; // posição do Point no mapa
+};
+
 void InitGhost(); // Função que inicializa as posições dos ghosts;
+void InitPointsHalls();
+void InitPoints();
 glm::vec3 CalculeGhostPosition(const char* ghost_name); // Função que calcula a nova posição do ghost
 float CalculeGhostRotateY(const char* ghost_name); // calcula a rotação em torno do eixo Y que deve ser aplicado no ghost
 int GetNextCheckpoint(Ghost ghost); // Função que retorna o checkpoint posterior ao atual do ghost
@@ -164,6 +179,12 @@ std::map<std::string, SceneObject> g_VirtualScene;
 // Lista de ghosts no mapa
 std::map<std::string, Ghost> g_Ghosts;
 
+// Lista de corredores do mapa
+std::map<int, PointsHall> g_PointsHalls;
+
+// Lista de Points no mapa
+std::map<int, Point> g_Points;
+
 // Pilha que guardará as matrizes de modelagem.
 std::stack<glm::mat4>  g_MatrixStack;
 
@@ -181,14 +202,15 @@ bool g_LeftMouseButtonPressed = false;
 bool g_RightMouseButtonPressed = false; // Análogo para botão direito do mouse
 bool g_MiddleMouseButtonPressed = false; // Análogo para botão do meio do mouse
 
+bool g_ThirstPerson = false;
+
 // Variáveis que definem a câmera em coordenadas esféricas, controladas pelo
 // usuário através do mouse (veja função CursorPosCallback()). A posição
 // efetiva da câmera é calculada dentro da função main(), dentro do loop de
 // renderização.
 float g_CameraTheta = 3.1415f / 2.0f; // Ângulo no plano ZX em relação ao eixo Z
 float g_CameraPhi = 0.0f;   // Ângulo em relação ao eixo Y
-//float g_CameraDistance = 1.0f; // Distância da câmera para a origem
-float g_CameraDistance = 0.0f; // Distância da câmera para a origem
+float g_CameraDistance = 35.0f; // Distância da câmera para a origem
 
 // Variáveis que controlam rotação do antebraço
 float g_ForearmAngleZ = 0.0f;
@@ -231,13 +253,14 @@ double g_LastCursorPosX, g_LastCursorPosY;
 
 // Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
 // Veja slides 195-227 e 229-234 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
-glm::vec4 camera_position_c  = glm::vec4(0.0f, 20.0f, g_CameraDistance, 1.0f); // Ponto "c", centro da câmera
+//glm::vec4 camera_position_c  = glm::vec4(0.0f, 20.0f, g_CameraDistance, 1.0f); // Ponto "c", centro da câmera
+glm::vec4 pacman_position_c  = glm::vec4(-13.0f, 1.0f, 0.0f, 1.0f); // Ponto central do pacman
+glm::vec4 camera_position_c  = glm::vec4(pacman_position_c.x, pacman_position_c.y, pacman_position_c.z, 1.0f); // Ponto "c", centro da câmera
 
 // Ajuste para posicionar os ghosts nas posições corretas do mapa
 glm::vec4 adjust_position_ghosts = glm::vec4(5.0f, 0.0f, 3.5f, 0.0f);
 
 // Tamanho padrão dos ghosts
-//glm::vec3 ghosts_scale = glm::vec3(1.05f, 1.05f, 1.05f);
 glm::vec3 ghosts_scale = glm::vec3(1.5f, 1.5f, 1.5f);
 
 int main(int argc, char* argv[])
@@ -344,6 +367,8 @@ int main(int argc, char* argv[])
     BuildTrianglesAndAddToVirtualScene(&ghostsmodel);
 
     InitGhost();
+    InitPointsHalls();
+    InitPoints();
 
     if ( argc > 1 )
     {
@@ -362,7 +387,7 @@ int main(int argc, char* argv[])
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
 
-    float speed = 3.0f; // Velocidade da câmera
+    float speed = 5.0f; // Velocidade da câmera
     float prev_time = (float)glfwGetTime();
     float prev_time_ghosts = (float)glfwGetTime();
 
@@ -393,49 +418,70 @@ int main(int argc, char* argv[])
         prev_time = current_time;
 
         // Vetor que projeta w no plano X,Z, evitando que a camera oscile de altura
-       // glm::vec4 projected_w  = glm::vec4(vetor_w.x, vetor_w.y, vetor_w.z, vetor_w.w); // usado quando se quer andar livremente pelo mapa, podendo subir e descer na altura
+        //glm::vec4 projected_w  = glm::vec4(vetor_w.x, vetor_w.y, vetor_w.z, vetor_w.w); // usado quando se quer andar livremente pelo mapa, podendo subir e descer na altura
         glm::vec4 projected_w  = glm::vec4(vetor_w.x, 0.0f, vetor_w.z, vetor_w.w);    // usado para andar na altura certa no labirinto, não podendo mudar a altura
 
         // Realiza movimentação de objetos
         if (tecla_W_pressionada) {
             // Movimenta câmera para frente
-            glm::vec4 new_position = camera_position_c + -vetor_w * speed * delta_t;
             // glm::vec4 new_position = camera_position_c + -projected_w * speed * delta_t;
+            glm::vec4 new_position = pacman_position_c - projected_w * speed * delta_t;
+
             if (!ColisionMaze(new_position)) {
-                camera_position_c = new_position;
+                //camera_position_c = new_position;
+                pacman_position_c = new_position;
             }
         }
 
         if (tecla_A_pressionada) {
             // Movimenta câmera para esquerda
-            glm::vec4 new_position = camera_position_c + -vetor_u * speed * delta_t;
+            //glm::vec4 new_position = camera_position_c + -vetor_u * speed * delta_t;
+            glm::vec4 new_position = pacman_position_c - vetor_u * speed * delta_t;
+
             if (!ColisionMaze(new_position)) {
-                camera_position_c = new_position;
+                pacman_position_c = new_position;
             }
         }
 
         if (tecla_S_pressionada) {
             // Movimenta câmera para trás
-            glm::vec4 new_position = camera_position_c + vetor_w * speed * delta_t;
             // glm::vec4 new_position = camera_position_c + projected_w * speed * delta_t;
+            glm::vec4 new_position = pacman_position_c + projected_w * speed * delta_t;
+
             if (!ColisionMaze(new_position)) {
-                camera_position_c = new_position;
+                pacman_position_c = new_position;
             }
         }
 
         if (tecla_D_pressionada) {
             // Movimenta câmera para direita
-            glm::vec4 new_position = camera_position_c + vetor_u * speed * delta_t;
+            //glm::vec4 new_position = camera_position_c + vetor_u * speed * delta_t;
+            glm::vec4 new_position = pacman_position_c + vetor_u * speed * delta_t;
+
             if (!ColisionMaze(new_position)) {
-                camera_position_c = new_position;
+                pacman_position_c = new_position;
             }
         }
+
+        // Calcula as coordenadas de câmera
+        glm::vec4 camera_view_vector;
 
         float v_x = cos(g_CameraPhi) * sin(g_CameraTheta);
         float v_y = sin(g_CameraPhi);
         float v_z = cos(g_CameraPhi) * cos(g_CameraTheta);
 
-        glm::vec4 camera_view_vector = glm::vec4(v_x, v_y, v_z, 0.0f);
+        // Se estiver em terceira pessoa
+        if (g_ThirstPerson) {
+            camera_position_c.x = pacman_position_c.x + g_CameraDistance * v_x;
+            camera_position_c.y = g_CameraDistance;
+            camera_position_c.z = pacman_position_c.z + g_CameraDistance * v_z;
+
+            camera_view_vector = pacman_position_c - camera_position_c ;
+        } else { // se estiver em primeira pessoa
+            camera_position_c = pacman_position_c;
+            camera_view_vector = glm::vec4(v_x, v_y, v_z, 0.0f);
+        }
+
         glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
 
         // Computamos a matriz "View" utilizando os parâmetros da câmera para
@@ -487,10 +533,12 @@ int main(int argc, char* argv[])
         #define GHOST_CLYDE  5
         #define GHOST_INKY   6
         #define GHOST_PINKY  7
+        #define POINT        8
 
 
         // Desenhamos o modelo da esfera
-        model = Matrix_Translate(camera_position_c.x,1.0f,camera_position_c.z);
+        model = Matrix_Translate(pacman_position_c.x,1.0f,pacman_position_c.z)
+              * Matrix_Scale(1.5f, 1.5f, 1.5f);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(object_id_uniform, SPHERE);
         DrawVirtualObject("sphere");
@@ -585,6 +633,23 @@ int main(int argc, char* argv[])
         glUniform1i(object_id_uniform, GHOST_PINKY);
         DrawVirtualObject("Pinky_Sphere.022");
 
+
+
+        // Points
+        std::map<int, Point>::iterator it = g_Points.begin();
+
+        while (it != g_Points.end()) {
+            Point point = it->second;
+
+            model = Matrix_Translate(point.position.x, point.position.y, point.position.z)
+                  * Matrix_Scale(0.25f, 0.25f, 0.25f);
+
+            glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(object_id_uniform, POINT);
+            DrawVirtualObject("sphere");
+
+            it++;
+        }
 
 
         // Imprimimos na tela os ângulos de Euler que controlam a rotação do
@@ -749,6 +814,239 @@ void InitGhost() {
 
     g_Ghosts[theghost.name] = theghost;
 
+}
+
+void InitPointsHalls()
+{
+    PointsHall hall;
+
+    hall.id = 0;
+    hall.hall_begin = glm::vec4(21.0f, 0.0f, -23.0f, 1.0f);
+    hall.hall_end   = glm::vec4(21.0f, 0.0f,  23.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 1;
+    hall.hall_begin = glm::vec4(-23.0f, 0.0f, -23.0f, 1.0f);
+    hall.hall_end   = glm::vec4(-23.0f, 0.0f,  23.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 2;
+    hall.hall_begin = glm::vec4(-18.0f, 0.0f, -14.0f, 1.0f);
+    hall.hall_end   = glm::vec4( 29.0f, 0.0f, -14.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 3;
+    hall.hall_begin = glm::vec4(-18.0f, 0.0f, 14.0f, 1.0f);
+    hall.hall_end   = glm::vec4( 29.0f, 0.0f, 14.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 4;
+    hall.hall_begin = glm::vec4(-12.0f, 0.0f, -14.0f, 1.0f);
+    hall.hall_end   = glm::vec4(-12.0f, 0.0f,  14.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 5;
+    hall.hall_begin = glm::vec4(-7.0f, 0.0f, -23.0f, 1.0f);
+    hall.hall_end   = glm::vec4(-7.0f, 0.0f,  -2.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 6;
+    hall.hall_begin = glm::vec4(-7.0f, 0.0f,  3.0f, 1.0f);
+    hall.hall_end   = glm::vec4(-7.0f, 0.0f, 24.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 7;
+    hall.hall_begin = glm::vec4(29.0f, 0.0f, -23.0f, 1.0f);
+    hall.hall_end   = glm::vec4(29.0f, 0.0f,  -2.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 8;
+    hall.hall_begin = glm::vec4(29.0f, 0.0f,  3.0f, 1.0f);
+    hall.hall_end   = glm::vec4(29.0f, 0.0f, 24.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 9;
+    hall.hall_begin = glm::vec4(15.0f, 0.0f, -23.0f, 1.0f);
+    hall.hall_end   = glm::vec4(29.0f, 0.0f, -23.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 10;
+    hall.hall_begin = glm::vec4(15.0f, 0.0f, 23.0f, 1.0f);
+    hall.hall_end   = glm::vec4(29.0f, 0.0f, 23.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 11;
+    hall.hall_begin = glm::vec4(15.0f, 0.0f, -23.0f, 1.0f);
+    hall.hall_end   = glm::vec4(15.0f, 0.0f, -14.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 12;
+    hall.hall_begin = glm::vec4(15.0f, 0.0f, 15.0f, 1.0f);
+    hall.hall_end   = glm::vec4(15.0f, 0.0f, 24.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 13;
+    hall.hall_begin = glm::vec4(-18.0f, 0.0f, -22.0f, 1.0f);
+    hall.hall_end   = glm::vec4(-18.0f, 0.0f, -15.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 14;
+    hall.hall_begin = glm::vec4(-18.0f, 0.0f, 16.0f, 1.0f);
+    hall.hall_end   = glm::vec4(-18.0f, 0.0f, 23.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 15;
+    hall.hall_begin = glm::vec4(-23.0f, 0.0f, -23.0f, 1.0f);
+    hall.hall_end   = glm::vec4(-18.0f, 0.0f, -23.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 16;
+    hall.hall_begin = glm::vec4(-23.0f, 0.0f, 23.0f, 1.0f);
+    hall.hall_end   = glm::vec4(-18.0f, 0.0f, 23.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 17;
+    hall.hall_begin = glm::vec4(23.0f, 0.0f, -3.0f, 1.0f);
+    hall.hall_end   = glm::vec4(29.0f, 0.0f, -3.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 18;
+    hall.hall_begin = glm::vec4(23.0f, 0.0f, 3.0f, 1.0f);
+    hall.hall_end   = glm::vec4(29.0f, 0.0f, 3.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 19;
+    hall.hall_begin = glm::vec4(-13.0f, 0.0f, -23.0f, 1.0f);
+    hall.hall_end   = glm::vec4( -8.0f, 0.0f, -23.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 20;
+    hall.hall_begin = glm::vec4(-13.0f, 0.0f, 23.0f, 1.0f);
+    hall.hall_end   = glm::vec4( -8.0f, 0.0f, 23.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 21;
+    hall.hall_begin = glm::vec4(15.0f, 0.0f, -8.0f, 1.0f);
+    hall.hall_end   = glm::vec4(20.0f, 0.0f, -8.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 22;
+    hall.hall_begin = glm::vec4(15.0f, 0.0f, 8.0f, 1.0f);
+    hall.hall_end   = glm::vec4(20.0f, 0.0f, 8.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 23;
+    hall.hall_begin = glm::vec4(15.0f, 0.0f, -8.0f, 1.0f);
+    hall.hall_end   = glm::vec4(15.0f, 0.0f, -2.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 24;
+    hall.hall_begin = glm::vec4(15.0f, 0.0f, 2.0f, 1.0f);
+    hall.hall_end   = glm::vec4(15.0f, 0.0f, 8.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 25;
+    hall.hall_begin = glm::vec4(-13.0f, 0.0f, -23.0f, 1.0f);
+    hall.hall_end   = glm::vec4(-13.0f, 0.0f, -19.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 26;
+    hall.hall_begin = glm::vec4(-13.0f, 0.0f, 19.0f, 1.0f);
+    hall.hall_end   = glm::vec4(-13.0f, 0.0f, 23.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 27;
+    hall.hall_begin = glm::vec4(-17.0f, 0.0f, -19.0f, 1.0f);
+    hall.hall_end   = glm::vec4(-14.0f, 0.0f, -19.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 28;
+    hall.hall_begin = glm::vec4(-17.0f, 0.0f, 19.0f, 1.0f);
+    hall.hall_end   = glm::vec4(-14.0f, 0.0f, 19.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 29;
+    hall.hall_begin = glm::vec4(-10.0f, 0.0f, -2.0f, 1.0f);
+    hall.hall_end   = glm::vec4( -8.0f, 0.0f, -2.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 30;
+    hall.hall_begin = glm::vec4(-10.0f, 0.0f, 2.0f, 1.0f);
+    hall.hall_end   = glm::vec4( -8.0f, 0.0f, 2.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 31;
+    hall.hall_begin = glm::vec4(-18.0f, 0.0f, -8.0f, 1.0f);
+    hall.hall_end   = glm::vec4(-13.0f, 0.0f, -8.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 32;
+    hall.hall_begin = glm::vec4(-18.0f, 0.0f, 8.0f, 1.0f);
+    hall.hall_end   = glm::vec4(-13.0f, 0.0f, 8.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 33;
+    hall.hall_begin = glm::vec4(-18.0f, 0.0f, -8.0f, 1.0f);
+    hall.hall_end   = glm::vec4(-18.0f, 0.0f, -2.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 34;
+    hall.hall_begin = glm::vec4(-18.0f, 0.0f, 2.0f, 1.0f);
+    hall.hall_end   = glm::vec4(-18.0f, 0.0f, 8.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 35;
+    hall.hall_begin = glm::vec4(-22.0f, 0.0f, -2.0f, 1.0f);
+    hall.hall_end   = glm::vec4(-19.0f, 0.0f, -2.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+
+    hall.id = 36;
+    hall.hall_begin = glm::vec4(-22.0f, 0.0f, 2.0f, 1.0f);
+    hall.hall_end   = glm::vec4(-19.0f, 0.0f, 2.0f, 1.0f);
+    g_PointsHalls[hall.id] = hall;
+}
+
+void InitPoints() {
+    Point point;
+    float steps       = 2.0f;
+    float actual_step = 0.0;
+    int actual_id     = 0;
+
+    std::map<int, PointsHall>::iterator it = g_PointsHalls.begin();
+
+    while (it != g_PointsHalls.end()) {
+        float initial_position_x = it->second.hall_begin.x;
+        float initial_position_z = it->second.hall_begin.z;
+
+        if (it->second.hall_begin.x != it->second.hall_end.x) {
+
+            //for (int i = 0; i <= it->second.hall_end.x; i++) {
+            while ((initial_position_x + actual_step) <= it->second.hall_end.x) {
+                point.id = actual_id;
+
+                point.position = glm::vec4(initial_position_x + actual_step, -0.5f, initial_position_z, 1.0f);
+                g_Points[point.id] = point;
+
+                actual_step += steps;
+                actual_id++;
+            }
+        } else {
+
+            //for (int i = 0; i <= it->second.hall_end.z; i++) {
+            while ((initial_position_z + actual_step) <= it->second.hall_end.z) {
+                point.id = actual_id;
+
+                point.position = glm::vec4(initial_position_x, -0.5f, initial_position_z + actual_step, 1.0f);
+                g_Points[point.id] = point;
+
+                actual_step += steps;
+                actual_id++;
+            }
+        }
+
+        actual_step = 0.0f;
+        it++;
+    }
 }
 
 // Função que retorna o checkpoint posterior ao atual do ghost
@@ -1509,6 +1807,18 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     if (key == GLFW_KEY_O && action == GLFW_PRESS)
     {
         g_UsePerspectiveProjection = false;
+    }
+
+    // Se o usuário apertar a tecla C, mudamos de primeira pessoa para terceira e vice-versa.
+    if (key == GLFW_KEY_C && action == GLFW_PRESS)
+    {
+        if (g_ThirstPerson){
+            g_ThirstPerson = false;
+            //g_CameraDistance = 0.0f;
+        } else {
+            g_ThirstPerson = true;
+            //g_CameraDistance = 2.5f;
+        }
     }
 
     // Se o usuário apertar a tecla H, fazemos um "toggle" do texto informativo mostrado na tela.

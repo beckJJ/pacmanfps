@@ -964,7 +964,7 @@
 	<stddef.h>
 	<stdint.h>
 
-1662866020 source:c:\codeblocks\pacmanfps\src\main.cpp
+1663707112 source:c:\codeblocks\pacmanfps\src\main.cpp
 	<cmath>
 	<cstdio>
 	<cstdlib>
@@ -986,6 +986,7 @@
 	<tiny_obj_loader.h>
 	"utils.h"
 	"matrices.h"
+	"colisions.h"
 
 1660742978 c:\codeblocks\pacmanfps\include\glm\gtc\type_ptr.hpp
 	"../gtc/quaternion.hpp"
@@ -1008,7 +1009,7 @@
 1660742980 c:\codeblocks\pacmanfps\include\glm\gtc\type_ptr.inl
 	<cstring>
 
-1662164634 c:\codeblocks\pacmanfps\include\matrices.h
+1663677960 c:\codeblocks\pacmanfps\include\matrices.h
 	<cstdio>
 	<cstdlib>
 	<glm/mat4x4.hpp>
@@ -2036,4 +2037,9 @@
 	<glm/vec4.hpp>
 
 1663016821 d:\ufrgs\2021-2\inf01046 - fundamentos de processamento de imagens\pacmanfps\include\colisions.h
+
+1663028689 c:\codeblocks\pacmanfps\include\colisions.h
+
+1663686283 source:c:\codeblocks\pacmanfps\src\collisions.cpp
+	<glm/vec4.hpp>
 

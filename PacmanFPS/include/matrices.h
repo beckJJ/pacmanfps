@@ -227,6 +227,8 @@ float dotproduct(glm::vec4 u, glm::vec4 v)
 glm::mat4 Matrix_Camera_View(glm::vec4 position_c, glm::vec4 view_vector, glm::vec4 up_vector)
 {
     glm::vec4 w = -view_vector / norm(view_vector);
+    //printf("%f, %f, %f\n", up_vector.x, up_vector.z, up_vector.w);
+    //printf("%f, %f, %f - %f\n\n", view_vector.x, view_vector.z, view_vector.w, norm(view_vector));
     glm::vec4 u = crossproduct(up_vector, w) / norm(crossproduct(up_vector, w));
 
     // Normalizamos os vetores u e w
