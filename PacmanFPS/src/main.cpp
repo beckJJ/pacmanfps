@@ -18,7 +18,8 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
-
+#define _WIN32_WINNT 0x0500
+#include <windows.h>
 // Headers abaixo são específicos de C++
 #include <map>
 #include <stack>
@@ -265,6 +266,9 @@ glm::vec3 ghosts_scale = glm::vec3(1.5f, 1.5f, 1.5f);
 
 int main(int argc, char* argv[])
 {
+    // esconder o terminal
+  //  ShowWindow(GetConsoleWindow(), SW_HIDE);
+
     // Inicializamos a biblioteca GLFW, utilizada para criar uma janela do
     // sistema operacional, onde poderemos renderizar com OpenGL.
     int success = glfwInit();
@@ -420,7 +424,7 @@ int main(int argc, char* argv[])
         // Vetor que projeta w no plano X,Z, evitando que a camera oscile de altura
         //glm::vec4 projected_w  = glm::vec4(vetor_w.x, vetor_w.y, vetor_w.z, vetor_w.w); // usado quando se quer andar livremente pelo mapa, podendo subir e descer na altura
         glm::vec4 projected_w  = glm::vec4(vetor_w.x, 0.0f, vetor_w.z, vetor_w.w);    // usado para andar na altura certa no labirinto, não podendo mudar a altura
-
+        projected_w /= norm(projected_w);
         // Realiza movimentação de objetos
         if (tecla_W_pressionada) {
             // Movimenta câmera para frente
@@ -479,7 +483,7 @@ int main(int argc, char* argv[])
             camera_view_vector = pacman_position_c - camera_position_c ;
         } else { // se estiver em primeira pessoa
             camera_position_c = pacman_position_c;
-            camera_view_vector = glm::vec4(v_x, v_y, v_z, 0.0f);
+            camera_view_vector = glm::vec4(-v_x, v_y, -v_z, 0.0f);
         }
 
         glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
@@ -684,6 +688,9 @@ int main(int argc, char* argv[])
 
     // Finalizamos o uso dos recursos do sistema operacional
     glfwTerminate();
+
+    // mostrar o terminal
+     ShowWindow(GetConsoleWindow(), SW_SHOW);
 
     // Fim do programa
     return 0;
@@ -1011,6 +1018,7 @@ void InitPoints() {
     float steps       = 2.0f;
     float actual_step = 0.0;
     int actual_id     = 0;
+    float point_height = 0.5f;
 
     std::map<int, PointsHall>::iterator it = g_PointsHalls.begin();
 
@@ -1024,7 +1032,7 @@ void InitPoints() {
             while ((initial_position_x + actual_step) <= it->second.hall_end.x) {
                 point.id = actual_id;
 
-                point.position = glm::vec4(initial_position_x + actual_step, -0.5f, initial_position_z, 1.0f);
+                point.position = glm::vec4(initial_position_x + actual_step, point_height, initial_position_z, 1.0f);
                 g_Points[point.id] = point;
 
                 actual_step += steps;
@@ -1036,7 +1044,7 @@ void InitPoints() {
             while ((initial_position_z + actual_step) <= it->second.hall_end.z) {
                 point.id = actual_id;
 
-                point.position = glm::vec4(initial_position_x, -0.5f, initial_position_z + actual_step, 1.0f);
+                point.position = glm::vec4(initial_position_x, point_height, initial_position_z + actual_step, 1.0f);
                 g_Points[point.id] = point;
 
                 actual_step += steps;
