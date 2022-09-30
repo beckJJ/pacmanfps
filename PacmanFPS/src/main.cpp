@@ -543,6 +543,7 @@ int main(int argc, char* argv[])
         // Desenhamos o modelo da esfera
         model = Matrix_Translate(pacman_position_c.x,1.0f,pacman_position_c.z)
               * Matrix_Scale(1.5f, 1.5f, 1.5f);
+             // * Matrix_Scale(0.1f, 0.1f, 0.1f);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(object_id_uniform, SPHERE);
         DrawVirtualObject("sphere");
@@ -2012,7 +2013,7 @@ void TextRendering_ShowPositionCamera(GLFWwindow* window)
     float pad = TextRendering_LineHeight(window);
 
     char buffer[80];
-    snprintf(buffer, 80, "Camera position: X = %.2f Y = %.2f Z = %.2f\n", camera_position_c.x, camera_position_c.y, camera_position_c.z);
+    snprintf(buffer, 80, "Pacman position: X = %.2f Y = %.2f Z = %.2f\n", pacman_position_c.x, pacman_position_c.y, pacman_position_c.z);
 
     TextRendering_PrintString(window, buffer, -1.0f+pad/10, -1.0f+2*pad/10, 1.0f);
 }
