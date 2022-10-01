@@ -7,6 +7,12 @@
 in vec4 position_world;
 in vec4 normal;
 
+// Posição do vértice atual no sistema de coordenadas local do modelo.
+in vec4 position_model;
+
+// Coordenadas de textura obtidas do arquivo OBJ (se existirem!)
+in vec2 texcoords;
+
 // Matrizes computadas no código C++ e enviadas para a GPU
 uniform mat4 model;
 uniform mat4 view;
@@ -22,11 +28,31 @@ uniform mat4 projection;
 #define GHOST_INKY   6
 #define GHOST_PINKY  7
 #define POINT        8
+#define POWER        9
+
+#define MAXLIGHTS    500
 
 uniform int object_id;
 
+// Parâmetros da axis-aligned bounding box (AABB) do modelo
+uniform vec4 bbox_min;
+uniform vec4 bbox_max;
+
+uniform int total_lights;
+uniform vec4 lightspositions[MAXLIGHTS];
+
+// Variáveis para acesso das imagens de textura
+uniform sampler2D TextureImage0;
+uniform sampler2D TextureImage1;
+uniform sampler2D TextureImage2;
+uniform sampler2D TextureImage3;
+
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec4 color;
+
+// Constantes
+#define M_PI   3.14159265358979323846
+#define M_PI_2 1.57079632679489661923
 
 void main()
 {
@@ -47,8 +73,9 @@ void main()
     vec4 n = normalize(normal);
 
     // Vetor que define o sentido da fonte de luz em relação ao ponto atual.
-    // vec4 l = normalize(vec4(1.0,1.0,0.5,0.0));
+    //vec4 l = normalize(vec4(1.0,1.0,0.5,0.0));
     vec4 l = normalize(camera_position - p);
+    //vec4 l = normalize(position_model - p);
 
     // Vetor que define o sentido da câmera em relação ao ponto atual.
     vec4 v = normalize(camera_position - p);
@@ -62,47 +89,57 @@ void main()
     vec3 Ka; // Refletância ambiente
     float q; // Expoente especular para o modelo de iluminação de Phong
 
+    // Coordenadas de textura U e V
+    float U = 0.0;
+    float V = 0.0;
+
     if ( object_id == SPHERE )
     {
         // PREENCHA AQUI
         // Propriedades espectrais da esfera
-        Kd = vec3(0.8,0.4,0.08);
-        Ks = vec3(0.0,0.0,0.0);
-        Ka = vec3(0.4,0.2,0.04);
+        Kd = vec3(1.0, 1.0, 0.0);
+        Ks = vec3(1.0, 1.0, 0.0);
+        Ka = vec3(0.4, 0.2, 0.04);
         q = 1.0;
-    }
-    else if ( object_id == BUNNY )
-    {
-        // PREENCHA AQUI
-        // Propriedades espectrais do coelho
-        Kd = vec3(0.08,0.4,0.8);
-        Ks = vec3(0.8,0.8,0.8);
-        Ka = vec3(0.04,0.2,0.4);
-        q = 32.0;
     }
     else if ( object_id == PLANE )
     {
-        // PREENCHA AQUI
+        // Coordenadas de textura do plano, obtidas do arquivo OBJ.
+        U = texcoords.x * 5;
+        V = texcoords.y * 5;
+
+        // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
+        Kd = texture(TextureImage2, vec2(U,V)).rgb;
+
         // Propriedades espectrais do plano
-        Kd = vec3(0.2,0.2,0.2);
         Ks = vec3(0.3,0.3,0.3);
         Ka = vec3(0.0,0.0,0.0);
         q = 20.0;
+
+        // Equação de Iluminação
+        float lambert = max(0, dot(n,l));
+        color.rgb = Kd * (lambert + 0.01);
     }
     else if ( object_id == MAZE )
     {
+        U = texcoords.x * 20;
+        V = texcoords.y * 40;
+
         // PREENCHA AQUI
         // Propriedades espectrais do plano
-        Kd = vec3(0.08,0.4,0.8);
-        Ks = vec3(0.8,0.8,0.8);
-        Ka = vec3(0.04,0.2,0.4);
-        q = 20.0;
+        Kd = texture(TextureImage3, vec2(U,V)).rgb;
+        Ks = vec3(0.0,0.0,0.0);
+        Ka = vec3(0.0,0.0,0.0);
+        q = 50.0;
+
+        // Equação de Iluminação
+        float lambert = max(0, dot(n,l));
+        color.rgb = Kd * (lambert + 0.01);
     }
     else if ( object_id == GHOST_BLINKY )
     {
         // PREENCHA AQUI
         // Propriedades espectrais do plano
-        //Kd = vec3(0.8,0.4,0.08);
         Kd = vec3(1.0,0.0,0.0);
         Ks = vec3(0.0,0.0,0.0);
         Ka = vec3(0.5,0.0,0.0);
@@ -121,10 +158,8 @@ void main()
     {
         // PREENCHA AQUI
         // Propriedades espectrais do plano
-        //Kd = vec3(0.8,0.4,0.08);
         Kd = vec3(0.0,0.55,0.75);
         Ks = vec3(0.0,0.0,0.0);
-        //Ka = vec3(0.4,0.2,0.04);
         Ka = vec3(0.0,0.27,0.37);
         q = 20.0;
     }
@@ -132,20 +167,26 @@ void main()
     {
         // PREENCHA AQUI
         // Propriedades espectrais do plano
-        //Kd = vec3(0.8,0.4,0.08);
         Kd = vec3(0.96,0.54,0.75);
         Ks = vec3(0.0,0.0,0.0);
-        //Ka = vec3(0.4,0.2,0.04);
         Ka = vec3(0.48,0.27,0.37);
         q = 20.0;
     }
     else if ( object_id == POINT )
     {
-        Kd = vec3(1.0, 1.0, 1.0);
-        Ks = vec3(0.0,0.0,0.0);
-        //Ka = vec3(0.4,0.2,0.04);
-        Ka = vec3(0.48,0.27,0.37);
+        Kd = vec3(0.8, 0.8, 1.0);
+        Ks = vec3(0.0, 0.0, 0.7);
+        Ka = vec3(0.3, 0.3, 0.5);
         q = 20.0;
+    }
+    else if ( object_id == POWER)
+    {
+        // PREENCHA AQUI
+        // Propriedades espectrais do plano
+        Kd = vec3(1.0, 1.0, 0.0);
+        Ks = vec3(0.3, 0.3, 0.3);
+        Ka = vec3(0.5, 0.5, 0.0);
+        q = 10.0;
     }
     else // Objeto desconhecido = preto
     {
@@ -162,13 +203,14 @@ void main()
     vec3 Ia = vec3(0.2,0.2,0.2); // PREENCHA AQUI o espectro da luz ambiente
 
     // Termo difuso utilizando a lei dos cossenos de Lambert
-    vec3 lambert_diffuse_term = Kd * I * max(0, dot(n, l)); // PREENCHA AQUI o termo difuso de Lambert
+    //vec3 lambert_diffuse_term = Kd * I * max(0, dot(n, l)); // PREENCHA AQUI o termo difuso de Lambert
 
     // Termo ambiente
-    vec3 ambient_term = Ka * Ia; // PREENCHA AQUI o termo ambiente
+    //vec3 ambient_term = Ka * Ia; // PREENCHA AQUI o termo ambiente
 
     // Termo especular utilizando o modelo de iluminação de Phong
-    vec3 phong_specular_term  = Ks * I * pow(max(0, dot(r, v)), q); // PREENCH AQUI o termo especular de Phong
+    //vec3 phong_specular_term  = Ks * I * pow(max(0, dot(r, v)), q); // PREENCH AQUI o termo especular de Phong
+
 
     // NOTE: Se você quiser fazer o rendering de objetos transparentes, é
     // necessário:
@@ -182,11 +224,23 @@ void main()
     //    suas distâncias para a câmera (desenhando primeiro objetos
     //    transparentes que estão mais longe da câmera).
     // Alpha default = 1 = 100% opaco = 0% transparente
-    color.a = 1;
+    //color.a = 1;
 
     // Cor final do fragmento calculada com uma combinação dos termos difuso,
     // especular, e ambiente. Veja slide 129 do documento Aula_17_e_18_Modelos_de_Iluminacao.pdf.
-    color.rgb = lambert_diffuse_term + ambient_term + phong_specular_term;
+    //color.rgb = color.rgb + (lambert_diffuse_term + ambient_term + phong_specular_term);
+
+    for (int i = 0; i < total_lights; i++) {
+        l = normalize(lightspositions[i] - p);
+        r = -l + 2 * n * (dot(n, l));
+
+        vec3 lambert_diffuse_term = Kd * I * max(0, dot(n, l));
+        vec3 ambient_term         = Ka * Ia;
+        vec3 phong_specular_term  = Ks * I * pow(max(0, dot(r, v)), q);
+
+        color.a = 1;
+        color.rgb = color.rgb + (lambert_diffuse_term + ambient_term + phong_specular_term);
+    }
 
     // Cor final com correção gamma, considerando monitor sRGB.
     // Veja https://en.wikipedia.org/w/index.php?title=Gamma_correction&oldid=751281772#Windows.2C_Mac.2C_sRGB_and_TV.2Fvideo_standard_gammas

@@ -44,10 +44,14 @@
 // Headers da biblioteca para carregar modelos obj
 #include <tiny_obj_loader.h>
 
+#include <stb_image.h>
+
 // Headers locais, definidos na pasta "include/"
 #include "utils.h"
 #include "matrices.h"
 #include "colisions.h"
+
+#define MAXLIGHTS 500
 
 // Estrutura que representa um modelo geométrico carregado a partir de um
 // arquivo ".obj". Veja https://en.wikipedia.org/wiki/Wavefront_.obj_file .
@@ -86,6 +90,7 @@ void PopMatrix(glm::mat4& M);
 void BuildTrianglesAndAddToVirtualScene(ObjModel*); // Constrói representação de um ObjModel como malha de triângulos para renderização
 void ComputeNormals(ObjModel* model); // Computa normais de um ObjModel, caso não existam.
 void LoadShadersFromFiles(); // Carrega os shaders de vértice e fragmento, criando um programa de GPU
+void LoadTextureImage(const char* filename); // Função que carrega imagens de textura
 void DrawVirtualObject(const char* object_name); // Desenha um objeto armazenado em g_VirtualScene
 GLuint LoadShader_Vertex(const char* filename);   // Carrega um vertex shader
 GLuint LoadShader_Fragment(const char* filename); // Carrega um fragment shader
@@ -131,6 +136,8 @@ struct SceneObject
     size_t       num_indices;            // Número de índices do objeto dentro do vetor indices[] definido em BuildTrianglesAndAddToVirtualScene()
     GLenum       rendering_mode;         // Modo de rasterização (GL_TRIANGLES, GL_TRIANGLE_STRIP, etc.)
     GLuint       vertex_array_object_id; // ID do VAO onde estão armazenados os atributos do modelo
+    glm::vec3    bbox_min; // Axis-Aligned Bounding Box do objeto
+    glm::vec3    bbox_max;
 };
 
 // Definimos uma estrutura que armazenará dados necessários para renderizar
@@ -159,14 +166,28 @@ struct Point
     glm::vec4 position; // posição do Point no mapa
 };
 
+struct Power
+{
+    int       id;
+    int       way;
+    float     t;
+    float     steps;
+    glm::vec4 actual_position;
+    glm::vec4 points[4];
+};
+
 void InitGhost(); // Função que inicializa as posições dos ghosts;
 void InitPointsHalls();
 void InitPoints();
+void InitPowerPoints();
+
 glm::vec3 CalculeGhostPosition(const char* ghost_name); // Função que calcula a nova posição do ghost
 float CalculeGhostRotateY(const char* ghost_name); // calcula a rotação em torno do eixo Y que deve ser aplicado no ghost
 int GetNextCheckpoint(Ghost ghost); // Função que retorna o checkpoint posterior ao atual do ghost
 int GetPreviousCheckpoint(Ghost ghost); // Função que retorna o checkpoint anterior ao atual do ghost
 void UpdateGhostWay(const char* ghost_name); // Função que atualiza o sentido que o ghost irá se locomover
+void CalculePowerPointPosition(); // Função que calcula a nova posição de um Power Point
+void InsertLightsPositions(int pointer, glm::vec4 position); // Função que insere nova posição de uma lux no array
 
 
 // Abaixo definimos variáveis globais utilizadas em várias funções do código.
@@ -185,6 +206,9 @@ std::map<int, PointsHall> g_PointsHalls;
 
 // Lista de Points no mapa
 std::map<int, Point> g_Points;
+
+// Lista de power points
+std::map<int, Power> g_PowerPoints;
 
 // Pilha que guardará as matrizes de modelagem.
 std::stack<glm::mat4>  g_MatrixStack;
@@ -209,7 +233,7 @@ bool g_ThirstPerson = false;
 // usuário através do mouse (veja função CursorPosCallback()). A posição
 // efetiva da câmera é calculada dentro da função main(), dentro do loop de
 // renderização.
-float g_CameraTheta = 3.1415f / 2.0f; // Ângulo no plano ZX em relação ao eixo Z
+float g_CameraTheta = -3.1415f / 2.0f; // Ângulo no plano ZX em relação ao eixo Z
 float g_CameraPhi = 0.0f;   // Ângulo em relação ao eixo Y
 float g_CameraDistance = 35.0f; // Distância da câmera para a origem
 
@@ -235,6 +259,12 @@ GLint model_uniform;
 GLint view_uniform;
 GLint projection_uniform;
 GLint object_id_uniform;
+GLint bbox_min_uniform;
+GLint bbox_max_uniform;
+GLint lightspositions_uniform;
+GLint total_lights_uniform;
+
+glm::vec4 lightspositions[MAXLIGHTS];
 
 bool tecla_W_pressionada = false;
 bool tecla_A_pressionada = false;
@@ -263,6 +293,15 @@ glm::vec4 adjust_position_ghosts = glm::vec4(5.0f, 0.0f, 3.5f, 0.0f);
 
 // Tamanho padrão dos ghosts
 glm::vec3 ghosts_scale = glm::vec3(1.5f, 1.5f, 1.5f);
+
+// Número de texturas carregadas pela função LoadTextureImage()
+GLuint g_NumLoadedTextures = 0;
+
+int total_lights = 0;
+
+// Variaveis de rotação para os Power Points
+float rotate_x = 3.1415f * 1.5f;
+float rotate_z = 0.0f;
 
 int main(int argc, char* argv[])
 {
@@ -340,17 +379,20 @@ int main(int argc, char* argv[])
     //
     LoadShadersFromFiles();
 
-    // Construímos a representação de objetos geométricos através de malhas de triângulos
+    // Carregamos duas imagens para serem utilizadas como textura
+    LoadTextureImage("../../data/tc-earth_daymap_surface.jpg");      // TextureImage0
+    LoadTextureImage("../../data/tc-earth_nightmap_citylights.gif"); // TextureImage1
+    LoadTextureImage("../../data/textures/BlackMarble/Black_marble_02/Textures_4K/black_marble_02_4k_baseColor.tga"); // TextureImage2
+    //LoadTextureImage("../../data/textures/Bricks/textures3/brick_4/brick_4_diff_2k.jpg"); // TextureImage3
+    //LoadTextureImage("../../data/textures/Bricks/textures3/brick_4/brick_4_AO_2k.jpg"); // TextureImage3
+    LoadTextureImage("../../data/textures/Bricks/textures3/brick_4/brick_4_spec_2k.jpg"); // TextureImage3
+    //LoadTextureImage("../../data/textures/Bricks/textures3/red_brick_03/red_brick_03_diff_2k.jpg"); // TextureImage3
 
+    // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel spheremodel("../../data/sphere.obj");
     ComputeNormals(&spheremodel);
     BuildTrianglesAndAddToVirtualScene(&spheremodel);
 
-    /*
-    ObjModel bunnymodel("../../data/bunny.obj");
-    ComputeNormals(&bunnymodel);
-    BuildTrianglesAndAddToVirtualScene(&bunnymodel);
-    */
 
     ObjModel planemodel("../../data/plane.obj");
     ComputeNormals(&planemodel);
@@ -370,9 +412,18 @@ int main(int argc, char* argv[])
     ComputeNormals(&ghostsmodel);
     BuildTrianglesAndAddToVirtualScene(&ghostsmodel);
 
+
+    // FONTE: modelo de estrela baixado adquirido em:
+    // https: https://free3d.com/pt/3d-model/star-v1--713680.html
+    ObjModel starmodel("../../data/star/21327_Star_v1.obj", "../../data/star/");
+    ComputeNormals(&starmodel);
+    BuildTrianglesAndAddToVirtualScene(&starmodel);
+
+
     InitGhost();
     InitPointsHalls();
     InitPoints();
+    InitPowerPoints();
 
     if ( argc > 1 )
     {
@@ -394,6 +445,7 @@ int main(int argc, char* argv[])
     float speed = 5.0f; // Velocidade da câmera
     float prev_time = (float)glfwGetTime();
     float prev_time_ghosts = (float)glfwGetTime();
+    float prev_time_bezier = (float)glfwGetTime();
 
     // Ficamos em loop, renderizando, até que o usuário feche a janela
     while (!glfwWindowShouldClose(window))
@@ -528,6 +580,8 @@ int main(int argc, char* argv[])
         // efetivamente aplicadas em todos os pontos.
         glUniformMatrix4fv(view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
         glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
+        glUniform4fv(lightspositions_uniform, sizeof(lightspositions), glm::value_ptr(lightspositions[0]));
+        glUniform1i(total_lights_uniform, total_lights);
 
         #define SPHERE       0
         #define BUNNY        1
@@ -538,25 +592,15 @@ int main(int argc, char* argv[])
         #define GHOST_INKY   6
         #define GHOST_PINKY  7
         #define POINT        8
+        #define POWER        9
 
 
         // Desenhamos o modelo da esfera
         model = Matrix_Translate(pacman_position_c.x,1.0f,pacman_position_c.z)
               * Matrix_Scale(1.5f, 1.5f, 1.5f);
-             // * Matrix_Scale(0.1f, 0.1f, 0.1f);
         glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(object_id_uniform, SPHERE);
         DrawVirtualObject("sphere");
-/*
-        // Desenhamos o modelo do coelho
-        model = Matrix_Translate(1.0f,0.0f,0.0f)
-              * Matrix_Rotate_Z(g_AngleZ)
-              * Matrix_Rotate_Y(g_AngleY)
-              * Matrix_Rotate_X(g_AngleX);
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, BUNNY);
-        DrawVirtualObject("bunny");
-        */
 
         // Desenhamos o modelo do plano
         model = Matrix_Translate(0.0f,-1.0f,0.0f)
@@ -639,10 +683,10 @@ int main(int argc, char* argv[])
         DrawVirtualObject("Pinky_Sphere.022");
 
 
+        std::map<int, Point>::iterator it  = g_Points.begin();
+        std::map<int, Power>::iterator it2 = g_PowerPoints.begin();
 
         // Points
-        std::map<int, Point>::iterator it = g_Points.begin();
-
         while (it != g_Points.end()) {
             Point point = it->second;
 
@@ -654,6 +698,30 @@ int main(int argc, char* argv[])
             DrawVirtualObject("sphere");
 
             it++;
+        }
+
+        // POWER POINT
+        float actual_time_bezier = (float)glfwGetTime();
+
+        if ((actual_time_bezier - prev_time_bezier) >= 0.01f) {
+            CalculePowerPointPosition();
+            rotate_z += 0.1f;
+            prev_time_bezier = actual_time_bezier;
+        }
+
+        while (it2 != g_PowerPoints.end()) {
+            Power power = it2->second;
+
+            model = Matrix_Translate(power.actual_position.x, power.actual_position.y, power.actual_position.z)
+                  * Matrix_Scale(0.3f, 0.3f, 0.3f)
+                  * Matrix_Rotate_X(rotate_x)
+                  * Matrix_Rotate_Z(rotate_z);
+
+            glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(object_id_uniform, POWER);
+            DrawVirtualObject("21327_Star_v1");
+
+            it2++;
         }
 
 
@@ -1028,25 +1096,25 @@ void InitPoints() {
         float initial_position_z = it->second.hall_begin.z;
 
         if (it->second.hall_begin.x != it->second.hall_end.x) {
-
-            //for (int i = 0; i <= it->second.hall_end.x; i++) {
             while ((initial_position_x + actual_step) <= it->second.hall_end.x) {
                 point.id = actual_id;
 
                 point.position = glm::vec4(initial_position_x + actual_step, point_height, initial_position_z, 1.0f);
                 g_Points[point.id] = point;
 
+                //InsertLightsPositions(point.id, point.position);
+
                 actual_step += steps;
                 actual_id++;
             }
         } else {
-
-            //for (int i = 0; i <= it->second.hall_end.z; i++) {
             while ((initial_position_z + actual_step) <= it->second.hall_end.z) {
                 point.id = actual_id;
 
                 point.position = glm::vec4(initial_position_x, point_height, initial_position_z + actual_step, 1.0f);
                 g_Points[point.id] = point;
+
+                //InsertLightsPositions(point.id, point.position);
 
                 actual_step += steps;
                 actual_id++;
@@ -1056,6 +1124,35 @@ void InitPoints() {
         actual_step = 0.0f;
         it++;
     }
+}
+
+void InitPowerPoints()
+{
+    Power power;
+
+    power.id    = 0;
+    power.way   = 0;
+    power.t     = 0;
+    power.steps = 0.005f;
+    power.actual_position = glm::vec4(0.0f,  0.0f,  0.0f, 1.0f);
+    power.points[0]       = glm::vec4(-2.50f, -0.25f, 0.0f,  1.0f);
+    power.points[1]       = glm::vec4(-1.75f,  2.00f, 0.0f,  1.0f);
+    power.points[2]       = glm::vec4(-1.00f, -2.00f, 0.0f,  1.0f);
+    power.points[3]       = glm::vec4(-0.25f,  0.25f, 0.0f,  1.0f);
+
+    g_PowerPoints[power.id] = power;
+
+    power.id    = 1;
+    power.way   = 0;
+    power.t     = 0;
+    power.steps = 0.005f;
+    power.actual_position = glm::vec4(0.0f,  0.0f,  0.0f, 1.0f);
+    power.points[0]       = glm::vec4( 8.50f, -0.25f, 0.0f,  1.0f);
+    power.points[1]       = glm::vec4( 9.25f,  2.00f, 0.0f,  1.0f);
+    power.points[2]       = glm::vec4(10.00f, -2.00f, 0.0f,  1.0f);
+    power.points[3]       = glm::vec4(10.75f,  0.25f, 0.0f,  1.0f);
+
+    g_PowerPoints[power.id] = power;
 }
 
 // Função que retorna o checkpoint posterior ao atual do ghost
@@ -1161,6 +1258,104 @@ float CalculeGhostRotateY(const char* ghost_name) {
     return y;
 }
 
+void CalculePowerPointPosition()
+{
+    std::map<int, Power>::iterator it = g_PowerPoints.begin();
+
+    while (it != g_PowerPoints.end()) {
+        Power power = it->second;
+
+        float b03 = pow(1 - power.t, 3);
+        float b13 = 3 * power.t * pow(1 - power.t, 2);
+        float b23 = 3 * pow(power.t, 2) * (1 - power.t);
+        float b33 = pow(power.t, 3);
+
+        glm::vec4 ct = b03 * power.points[0] + b13 * power.points[1] + b23 * power.points[2] + b33 * power.points[3];
+        power.actual_position = ct;
+
+        if (power.t >= 1) {
+            power.way = 1;
+        }
+        else if (power.t <= 0) {
+            power.way = 0;
+        }
+
+        if (power.way == 0) {
+            power.t += power.steps;
+        } else {
+            power.t -= power.steps;
+        }
+
+        g_PowerPoints[it->first] = power;
+        InsertLightsPositions(power.id, power.actual_position);
+        it++;
+    }
+}
+
+void InsertLightsPositions(int pointer, glm::vec4 position)
+{
+    if (pointer < MAXLIGHTS) {
+        if (pointer >= total_lights)
+            total_lights ++;
+
+        lightspositions[pointer] = glm::vec4(position.x, position.y, position.z, position.w);
+    }
+}
+
+// Função que carrega uma imagem para ser utilizada como textura
+void LoadTextureImage(const char* filename)
+{
+    printf("Carregando imagem \"%s\"... ", filename);
+
+    // Primeiro fazemos a leitura da imagem do disco
+    stbi_set_flip_vertically_on_load(true);
+    int width;
+    int height;
+    int channels;
+    unsigned char *data = stbi_load(filename, &width, &height, &channels, 3);
+
+    if ( data == NULL )
+    {
+        fprintf(stderr, "ERROR: Cannot open image file \"%s\".\n", filename);
+        std::exit(EXIT_FAILURE);
+    }
+
+    printf("OK (%dx%d).\n", width, height);
+
+    // Agora criamos objetos na GPU com OpenGL para armazenar a textura
+    GLuint texture_id;
+    GLuint sampler_id;
+    glGenTextures(1, &texture_id);
+    glGenSamplers(1, &sampler_id);
+
+    // Veja slides 95-96 do documento Aula_20_Mapeamento_de_Texturas.pdf
+    //glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    //glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    // Parâmetros de amostragem da textura.
+    glSamplerParameteri(sampler_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glSamplerParameteri(sampler_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // Agora enviamos a imagem lida do disco para a GPU
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+    glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
+
+    GLuint textureunit = g_NumLoadedTextures;
+    glActiveTexture(GL_TEXTURE0 + textureunit);
+    glBindTexture(GL_TEXTURE_2D, texture_id);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glBindSampler(textureunit, sampler_id);
+
+    stbi_image_free(data);
+
+    g_NumLoadedTextures += 1;
+}
+
 // Função que desenha um objeto armazenado em g_VirtualScene. Veja definição
 // dos objetos na função BuildTrianglesAndAddToVirtualScene().
 void DrawVirtualObject(const char* object_name)
@@ -1169,6 +1364,13 @@ void DrawVirtualObject(const char* object_name)
     // vértices apontados pelo VAO criado pela função BuildTrianglesAndAddToVirtualScene(). Veja
     // comentários detalhados dentro da definição de BuildTrianglesAndAddToVirtualScene().
     glBindVertexArray(g_VirtualScene[object_name].vertex_array_object_id);
+
+    // Setamos as variáveis "bbox_min" e "bbox_max" do fragment shader
+    // com os parâmetros da axis-aligned bounding box (AABB) do modelo.
+    glm::vec3 bbox_min = g_VirtualScene[object_name].bbox_min;
+    glm::vec3 bbox_max = g_VirtualScene[object_name].bbox_max;
+    glUniform4f(bbox_min_uniform, bbox_min.x, bbox_min.y, bbox_min.z, 1.0f);
+    glUniform4f(bbox_max_uniform, bbox_max.x, bbox_max.y, bbox_max.z, 1.0f);
 
     // Pedimos para a GPU rasterizar os vértices dos eixos XYZ
     // apontados pelo VAO como linhas. Veja a definição de
@@ -1228,6 +1430,18 @@ void LoadShadersFromFiles()
     view_uniform            = glGetUniformLocation(program_id, "view"); // Variável da matriz "view" em shader_vertex.glsl
     projection_uniform      = glGetUniformLocation(program_id, "projection"); // Variável da matriz "projection" em shader_vertex.glsl
     object_id_uniform       = glGetUniformLocation(program_id, "object_id"); // Variável "object_id" em shader_fragment.glsl
+    bbox_min_uniform        = glGetUniformLocation(program_id, "bbox_min");
+    bbox_max_uniform        = glGetUniformLocation(program_id, "bbox_max");
+    lightspositions_uniform = glGetUniformLocation(program_id, "lightspositions");
+    total_lights_uniform    = glGetUniformLocation(program_id, "total_lights");
+
+    // Variáveis em "shader_fragment.glsl" para acesso das imagens de textura
+    glUseProgram(program_id);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage0"), 0);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage1"), 1);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage2"), 2);
+    glUniform1i(glGetUniformLocation(program_id, "TextureImage3"), 3);
+    glUseProgram(0);
 }
 
 // Função que pega a matriz M e guarda a mesma no topo da pilha
@@ -1332,6 +1546,12 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
         size_t first_index = indices.size();
         size_t num_triangles = model->shapes[shape].mesh.num_face_vertices.size();
 
+        const float minval = std::numeric_limits<float>::min();
+        const float maxval = std::numeric_limits<float>::max();
+
+        glm::vec3 bbox_min = glm::vec3(maxval,maxval,maxval);
+        glm::vec3 bbox_max = glm::vec3(minval,minval,minval);
+
         for (size_t triangle = 0; triangle < num_triangles; ++triangle)
         {
             assert(model->shapes[shape].mesh.num_face_vertices[triangle] == 3);
@@ -1345,17 +1565,23 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
                 const float vx = model->attrib.vertices[3*idx.vertex_index + 0];
                 const float vy = model->attrib.vertices[3*idx.vertex_index + 1];
                 const float vz = model->attrib.vertices[3*idx.vertex_index + 2];
-                //printf("tri %d vert %d = (%.2f, %.2f, %.2f)\n", (int)triangle, (int)vertex, vx, vy, vz);
+
                 model_coefficients.push_back( vx ); // X
                 model_coefficients.push_back( vy ); // Y
                 model_coefficients.push_back( vz ); // Z
                 model_coefficients.push_back( 1.0f ); // W
 
+                bbox_min.x = std::min(bbox_min.x, vx);
+                bbox_min.y = std::min(bbox_min.y, vy);
+                bbox_min.z = std::min(bbox_min.z, vz);
+                bbox_max.x = std::max(bbox_max.x, vx);
+                bbox_max.y = std::max(bbox_max.y, vy);
+                bbox_max.z = std::max(bbox_max.z, vz);
+
                 // Inspecionando o código da tinyobjloader, o aluno Bernardo
                 // Sulzbach (2017/1) apontou que a maneira correta de testar se
                 // existem normais e coordenadas de textura no ObjModel é
                 // comparando se o índice retornado é -1. Fazemos isso abaixo.
-
                 if ( idx.normal_index != -1 )
                 {
                     const float nx = model->attrib.normals[3*idx.normal_index + 0];
@@ -1386,7 +1612,10 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
         theobject.rendering_mode = GL_TRIANGLES;       // Índices correspondem ao tipo de rasterização GL_TRIANGLES.
         theobject.vertex_array_object_id = vertex_array_object_id;
 
-        std::cout << model->shapes[shape].name << std::endl;
+        theobject.bbox_min = bbox_min;
+        theobject.bbox_max = bbox_max;
+
+        //std::cout << model->shapes[shape].name << std::endl;
 
         g_VirtualScene[model->shapes[shape].name] = theobject;
     }
