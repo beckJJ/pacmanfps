@@ -20,6 +20,8 @@
 #include <cstdlib>
 #define _WIN32_WINNT 0x0500
 #include <windows.h>
+#include <stdlib.h>
+#include <string.h>
 // Headers abaixo são específicos de C++
 #include <map>
 #include <stack>
@@ -111,6 +113,7 @@ void TextRendering_PrintMatrixVectorProduct(GLFWwindow* window, glm::mat4 M, glm
 void TextRendering_PrintMatrixVectorProductMoreDigits(GLFWwindow* window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
 void TextRendering_PrintMatrixVectorProductDivW(GLFWwindow* window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
 void TextRendering_InitialScreen(GLFWwindow* window);
+void TextRendering_ShowLivesAndPoints(GLFWwindow* window);
 
 // Funções abaixo renderizam como texto na janela OpenGL algumas matrizes e
 // outras informações do programa. Definidas após main().
@@ -223,6 +226,10 @@ bool g_StartGame = false;
 // Variaveis que controlam o fim do jogo
 bool g_EndGame = false;
 bool g_GameWon = false;
+
+// Pontuação e num de vidas
+int g_NumLives = 3;
+int g_TotalPoints = 0;
 
 // Variáveis que definem um programa de GPU (shaders). Veja função LoadShadersFromFiles().
 GLuint vertex_shader_id;
@@ -473,6 +480,9 @@ int main(int argc, char* argv[])
                     pacman_position_c.z *= -1;
                 }
                 CollisionPoints(pacman_position_c, &g_Points);
+                if (CollisionPowerPoints(pacman_position_c, &g_PowerPoints)) {
+                    g_NumLives += 1;
+                }
             }
 
             if (tecla_A_pressionada) {
@@ -486,6 +496,9 @@ int main(int argc, char* argv[])
                     pacman_position_c.z *= -1;
                 }
                 CollisionPoints(pacman_position_c, &g_Points);
+                if (CollisionPowerPoints(pacman_position_c, &g_PowerPoints)) {
+                    g_NumLives += 1;
+                }
             }
 
             if (tecla_S_pressionada) {
@@ -499,6 +512,9 @@ int main(int argc, char* argv[])
                     pacman_position_c.z *= -1;
                 }
                 CollisionPoints(pacman_position_c, &g_Points);
+                if (CollisionPowerPoints(pacman_position_c, &g_PowerPoints)) {
+                    g_NumLives += 1;
+                }
             }
 
             if (tecla_D_pressionada) {
@@ -512,6 +528,9 @@ int main(int argc, char* argv[])
                     pacman_position_c.z *= -1;
                 }
                 CollisionPoints(pacman_position_c, &g_Points);
+                if (CollisionPowerPoints(pacman_position_c, &g_PowerPoints)) {
+                    g_NumLives += 1;
+                }
             }
             if (tecla_ESPACO_pressionada) {
                 //Movimenta pacman para cima
@@ -519,10 +538,18 @@ int main(int argc, char* argv[])
                 if (!CollisionMaze(new_position) && !CollisionPlanes(new_position)) {
                     pacman_position_c = new_position;
                 }
+                CollisionPoints(pacman_position_c, &g_Points);
+                if (CollisionPowerPoints(pacman_position_c, &g_PowerPoints)) {
+                    g_NumLives += 1;
+                }
             } else {
                 glm::vec4 new_position = pacman_position_c - glm::vec4(0.0f, 1.0f, 0.0f, 0.0f) * speed * delta_t;
                 if (!CollisionMaze(new_position) && !CollisionPlanes(new_position)) {
                     pacman_position_c = new_position;
+                }
+                CollisionPoints(pacman_position_c, &g_Points);
+                if (CollisionPowerPoints(pacman_position_c, &g_PowerPoints)) {
+                    g_NumLives += 1;
                 }
             }
 
@@ -530,6 +557,12 @@ int main(int argc, char* argv[])
             if (CollisionGhostsPacman(pacman_position_c, g_Ghosts)) {
                 // reseta posição do pacman para posição inicial
                 pacman_position_c  = glm::vec4(-13.0f, 1.0f, 0.0f, 1.0f);
+                g_NumLives -= 1;
+                if (g_NumLives < 0) {
+                    g_EndGame = true;
+                    g_GameWon = false;
+                    printf("You lost The Game!\n");
+                }
             }
 
             // Calcula as coordenadas de câmera
@@ -704,10 +737,10 @@ int main(int argc, char* argv[])
             std::map<int, Power>::iterator it2 = g_PowerPoints.begin();
 
             // Points
+            int numPoints = 0;
             int num_not_taken = 0;
             while (it != g_Points.end()) {
                 Point point = it->second;
-
                 if (!point.taken) {
                     num_not_taken++;
                     model = Matrix_Translate(point.position.x, point.position.y, point.position.z)
@@ -716,11 +749,15 @@ int main(int argc, char* argv[])
                     glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
                     glUniform1i(object_id_uniform, POINT);
                     DrawVirtualObject("sphere");
+                } else {
+                    numPoints += 100;
                 }
                 it++;
             }
+            g_TotalPoints = numPoints;
             if (num_not_taken == 0) {
                 g_EndGame = true;
+                g_GameWon = true;
                 printf("You won The Game!\n");
             }
 
@@ -735,16 +772,16 @@ int main(int argc, char* argv[])
 
             while (it2 != g_PowerPoints.end()) {
                 Power power = it2->second;
+                if (!power.taken) {
+                    model = Matrix_Translate(power.actual_position.x, power.actual_position.y, power.actual_position.z)
+                          * Matrix_Scale(0.3f, 0.3f, 0.3f)
+                          * Matrix_Rotate_X(rotate_x)
+                          * Matrix_Rotate_Z(rotate_z);
 
-                model = Matrix_Translate(power.actual_position.x, power.actual_position.y, power.actual_position.z)
-                      * Matrix_Scale(0.3f, 0.3f, 0.3f)
-                      * Matrix_Rotate_X(rotate_x)
-                      * Matrix_Rotate_Z(rotate_z);
-
-                glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-                glUniform1i(object_id_uniform, POWER);
-                DrawVirtualObject("21327_Star_v1");
-
+                    glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+                    glUniform1i(object_id_uniform, POWER);
+                    DrawVirtualObject("21327_Star_v1");
+                }
                 it2++;
             }
 
@@ -754,6 +791,7 @@ int main(int argc, char* argv[])
             //TextRendering_ShowEulerAngles(window);
 
             TextRendering_ShowPositionCamera(window);
+            TextRendering_ShowLivesAndPoints(window);
 
             // Imprimimos na informação sobre a matriz de projeção sendo utilizada.
             TextRendering_ShowProjection(window);
@@ -1162,6 +1200,7 @@ void InitPowerPoints()
     power.id    = 0;
     power.way   = 0;
     power.t     = 0;
+    power.taken = 0;
     power.steps = 0.005f;
     power.actual_position = glm::vec4(0.0f,  0.0f,  0.0f, 1.0f);
     power.points[0]       = glm::vec4(-2.50f, -0.25f, 0.0f,  1.0f);
@@ -1174,6 +1213,7 @@ void InitPowerPoints()
     power.id    = 1;
     power.way   = 0;
     power.t     = 0;
+    power.taken = 0;
     power.steps = 0.005f;
     power.actual_position = glm::vec4(0.0f,  0.0f,  0.0f, 1.0f);
     power.points[0]       = glm::vec4( 8.50f, -0.25f, 0.0f,  1.0f);
@@ -1293,30 +1333,31 @@ void CalculatePowerPointPosition()
 
     while (it != g_PowerPoints.end()) {
         Power power = it->second;
+        if (!power.taken) {
+            float b03 = pow(1 - power.t, 3);
+            float b13 = 3 * power.t * pow(1 - power.t, 2);
+            float b23 = 3 * pow(power.t, 2) * (1 - power.t);
+            float b33 = pow(power.t, 3);
 
-        float b03 = pow(1 - power.t, 3);
-        float b13 = 3 * power.t * pow(1 - power.t, 2);
-        float b23 = 3 * pow(power.t, 2) * (1 - power.t);
-        float b33 = pow(power.t, 3);
+            glm::vec4 ct = b03 * power.points[0] + b13 * power.points[1] + b23 * power.points[2] + b33 * power.points[3];
+            power.actual_position = ct;
 
-        glm::vec4 ct = b03 * power.points[0] + b13 * power.points[1] + b23 * power.points[2] + b33 * power.points[3];
-        power.actual_position = ct;
+            if (power.t >= 1) {
+                power.way = 1;
+            }
+            else if (power.t <= 0) {
+                power.way = 0;
+            }
 
-        if (power.t >= 1) {
-            power.way = 1;
+            if (power.way == 0) {
+                power.t += power.steps;
+            } else {
+                power.t -= power.steps;
+            }
+
+            g_PowerPoints[it->first] = power;
+            InsertLightsPositions(power.id, power.actual_position);
         }
-        else if (power.t <= 0) {
-            power.way = 0;
-        }
-
-        if (power.way == 0) {
-            power.t += power.steps;
-        } else {
-            power.t -= power.steps;
-        }
-
-        g_PowerPoints[it->first] = power;
-        InsertLightsPositions(power.id, power.actual_position);
         it++;
     }
 }
@@ -2512,11 +2553,33 @@ void PrintObjModelInfo(ObjModel* model)
 }
 
 void TextRendering_InitialScreen(GLFWwindow* window){
-    TextRendering_PrintString(window, "       PACMAN       ", -0.28f,   0.1f, 2.0f);
-    TextRendering_PrintString(window, "Press Enter to Start", -0.28f,  -0.1f, 2.0f);
+    TextRendering_PrintString(window, "       PACMAN       ", -0.40f,   0.1f, 2.0f);
+    TextRendering_PrintString(window, "Press Enter to Start", -0.40f,  -0.1f, 2.0f);
 
     TextRendering_PrintString(window, "Alunos: Pedro Company Beck    ", -1.0f,  -0.8f, 1.0f);
     TextRendering_PrintString(window, "        Wagner Gomes Ferreira ", -1.0f,  -0.9f, 1.0f);
+}
+
+void TextRendering_ShowLivesAndPoints(GLFWwindow* window)
+{
+    char buffer[20];
+    float lineheight = TextRendering_LineHeight(window);
+
+    snprintf(buffer, 20, "Vidas: %d", g_NumLives);
+    TextRendering_PrintString(window, buffer, -1.0f, 1.0f-lineheight, 1.0f);
+
+    snprintf(buffer, 20, "Pontos: %d", g_TotalPoints);
+    TextRendering_PrintString(window, buffer, -1.0f, 1.0f-(2*lineheight), 1.0f);
+
+  /*  char *StrNumVidas = malloc(strlen(vidas) + strlen(numLives) + 1);
+    strcpy(StrNumVidas, vidas);
+    strcat(StrNumVidas, numLives);
+
+    char *StrNumPoints = itoa(g_TotalPoints, StrNumPoints, 10);
+    float lineheight = TextRendering_LineHeight(window);
+    float charwidth = TextRendering_CharWidth(window);
+
+    TextRendering_PrintString(window, StrNumVidas, -1.0f-lineheight, 1.0f);*/
 }
 
 // set makeprg=cd\ ..\ &&\ make\ run\ >/dev/null

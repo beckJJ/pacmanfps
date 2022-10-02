@@ -992,3 +992,28 @@ int CollisionTeleport(glm::vec4 pacman_position)
 
     return 0;
 }
+
+int CollisionPowerPoints(glm::vec4 pacman_position, std::map<int, Power> *g_PowerPoints)
+{
+    std::map<int, Power>::iterator it = g_PowerPoints->begin();
+
+    // definir o pacman como uma esfera de raio r ao redor do ponto pacman_position
+    double radius_pacman = 2.0f;
+
+
+    while (it != g_PowerPoints->end()) {
+        Power power = it->second;
+
+        if (!power.taken) {
+            if ((pow(power.actual_position.x - pacman_position.x, 2) +
+                pow(power.actual_position.y - pacman_position.y, 2) +
+                pow(power.actual_position.z - pacman_position.z, 2)) <= pow(radius_pacman, 2)) {
+                power.taken = 1;
+                g_PowerPoints->at(power.id) = power;
+                return 1;
+            }
+        }
+        it++;
+    }
+    return 0;
+}

@@ -41,6 +41,7 @@ struct Power
     float     steps;
     glm::vec4 actual_position;
     glm::vec4 points[4];
+    int taken;
 };
 
 #endif // _STRUCTS_H
