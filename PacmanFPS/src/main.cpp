@@ -2449,7 +2449,7 @@ void TextRendering_InitialScreen(GLFWwindow* window){
     TextRendering_PrintString(window, "       PACMAN       ", -0.28f,   0.1f, 2.0f);
     TextRendering_PrintString(window, "Press Enter to Start", -0.28f,  -0.1f, 2.0f);
 
-    TextRendering_PrintString(window, "Alunos: Pedro Beck Filho      ", -1.0f,  -0.8f, 1.0f);
+    TextRendering_PrintString(window, "Alunos: Pedro Company Beck    ", -1.0f,  -0.8f, 1.0f);
     TextRendering_PrintString(window, "        Wagner Gomes Ferreira ", -1.0f,  -0.9f, 1.0f);
 }
 
