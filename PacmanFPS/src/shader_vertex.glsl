@@ -1,5 +1,8 @@
 #version 330 core
 
+#define SPHERE       0
+#define MAXLIGHTS    500
+
 // Atributos de vértice recebidos como entrada ("in") pelo Vertex Shader.
 // Veja a função BuildTrianglesAndAddToVirtualScene() em "main.cpp".
 layout (location = 0) in vec4 model_coefficients;
@@ -11,6 +14,10 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
+uniform int total_lights;
+uniform int object_id;
+uniform vec4 lightspositions[MAXLIGHTS];
+
 // Atributos de vértice que serão gerados como saída ("out") pelo Vertex Shader.
 // ** Estes serão interpolados pelo rasterizador! ** gerando, assim, valores
 // para cada fragmento, os quais serão recebidos como entrada pelo Fragment
@@ -19,6 +26,7 @@ out vec4 position_world;
 out vec4 position_model;
 out vec4 normal;
 out vec2 texcoords;
+out vec3 color_v;
 
 void main()
 {
@@ -63,5 +71,35 @@ void main()
 
     // Coordenadas de textura obtidas do arquivo OBJ (se existirem!)
     texcoords = texture_coefficients;
+
+    // Gouraud Shading para objetos do tipo SPHERE
+    if (object_id == SPHERE) {
+        vec4 origin          = vec4(0.0, 0.0, 0.0, 1.0);
+        vec4 camera_position = inverse(view) * origin;
+        vec4 v               = normalize(camera_position - position_world);
+
+        // Propriedades espectrais da esfera
+        vec3 Kd = vec3(1.0, 1.0, 0.0);
+        vec3 Ks = vec3(1.0, 1.0, 0.0);
+        vec3 Ka = vec3(0.4, 0.2, 0.04);
+        float q = 1.0;
+
+        vec3 Ia           = vec3(0.2,0.2,0.2);
+        vec3 ambient_term = Ka * Ia;
+        vec3 sum_lights   = vec3(0.0f, 0.0f, 0.0f);
+
+        for (int i = 0; i < total_lights; i++) {
+            vec3 I = vec3(1.0,1.0,0.0);
+            vec4 l = normalize(lightspositions[i] - position_world);
+            vec4 r = -l + 2 * normal * (dot(normal, l));
+
+            vec3 lambert_diffuse_term = Kd * I * max(0, dot(normal, l));
+            vec3 phong_specular_term  = Ks * I * pow(max(0, dot(r, v)), q);
+
+            sum_lights += (lambert_diffuse_term + phong_specular_term);
+        }
+
+        color_v = ambient_term + sum_lights;
+    }
 }
 

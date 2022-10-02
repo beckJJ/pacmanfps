@@ -110,6 +110,7 @@ void TextRendering_PrintVector(GLFWwindow* window, glm::vec4 v, float x, float y
 void TextRendering_PrintMatrixVectorProduct(GLFWwindow* window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
 void TextRendering_PrintMatrixVectorProductMoreDigits(GLFWwindow* window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
 void TextRendering_PrintMatrixVectorProductDivW(GLFWwindow* window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
+void TextRendering_InitialScreen(GLFWwindow* window);
 
 // Funções abaixo renderizam como texto na janela OpenGL algumas matrizes e
 // outras informações do programa. Definidas após main().
@@ -216,6 +217,9 @@ bool g_UsePerspectiveProjection = true;
 // Variável que controla se o texto informativo será mostrado na tela.
 bool g_ShowInfoText = true;
 
+// Variavel que controla o inicio do jogo
+bool g_StartGame = false;
+
 // Variáveis que definem um programa de GPU (shaders). Veja função LoadShadersFromFiles().
 GLuint vertex_shader_id;
 GLuint fragment_shader_id;
@@ -229,7 +233,10 @@ GLint bbox_max_uniform;
 GLint lightspositions_uniform;
 GLint total_lights_uniform;
 
+// Array das posições das luzes a serem carregadas
 glm::vec4 lightspositions[MAXLIGHTS];
+// Total de luzes a serem carregadas
+int total_lights = 0;
 
 bool tecla_W_pressionada = false;
 bool tecla_A_pressionada = false;
@@ -261,8 +268,6 @@ glm::vec3 ghosts_scale = glm::vec3(1.5f, 1.5f, 1.5f);
 
 // Número de texturas carregadas pela função LoadTextureImage()
 GLuint g_NumLoadedTextures = 0;
-
-int total_lights = 0;
 
 // Variaveis de rotação para os Power Points
 float rotate_x = 3.1415f * 1.5f;
@@ -433,283 +438,277 @@ int main(int argc, char* argv[])
         // os shaders de vértice e fragmentos).
         glUseProgram(program_id);
 
-        // Atualiza delta de tempo
-        float current_time = (float)glfwGetTime();
-        delta_t = current_time - prev_time;
-        prev_time = current_time;
+        // Se não foi clicado Enter para o jogo iniciar
+        if (!g_StartGame) {
+            TextRendering_InitialScreen(window);
+        } else {
+            // Atualiza delta de tempo
+            float current_time = (float)glfwGetTime();
+            delta_t = current_time - prev_time;
+            prev_time = current_time;
 
-        // Vetor que projeta w no plano X,Z, evitando que a camera oscile de altura
-        //glm::vec4 projected_w  = glm::vec4(vetor_w.x, vetor_w.y, vetor_w.z, vetor_w.w); // usado quando se quer andar livremente pelo mapa, podendo subir e descer na altura
-        glm::vec4 projected_w  = glm::vec4(vetor_w.x, 0.0f, vetor_w.z, vetor_w.w);    // usado para andar na altura certa no labirinto, não podendo mudar a altura
-        projected_w /= norm(projected_w);
-        // Realiza movimentação de objetos
-        if (tecla_W_pressionada) {
-            // Movimenta câmera para frente
-            // glm::vec4 new_position = camera_position_c + -projected_w * speed * delta_t;
-            glm::vec4 new_position = pacman_position_c - projected_w * speed * delta_t;
+            // Vetor que projeta w no plano X,Z, evitando que a camera oscile de altura
+            //glm::vec4 projected_w  = glm::vec4(vetor_w.x, vetor_w.y, vetor_w.z, vetor_w.w); // usado quando se quer andar livremente pelo mapa, podendo subir e descer na altura
+            glm::vec4 projected_w  = glm::vec4(vetor_w.x, 0.0f, vetor_w.z, vetor_w.w);    // usado para andar na altura certa no labirinto, não podendo mudar a altura
+            projected_w /= norm(projected_w);
+            // Realiza movimentação de objetos
+            if (tecla_W_pressionada) {
+                // Movimenta pacman para frente
+                glm::vec4 new_position = pacman_position_c - projected_w * speed * delta_t;
 
-            if (!CollisionMaze(new_position)) {
-                //camera_position_c = new_position;
-                pacman_position_c = new_position;
-            }
-            CollisionPoints(pacman_position_c, &g_Points);
-        }
-
-        if (tecla_A_pressionada) {
-            // Movimenta câmera para esquerda
-            //glm::vec4 new_position = camera_position_c + -vetor_u * speed * delta_t;
-            glm::vec4 new_position = pacman_position_c - vetor_u * speed * delta_t;
-
-            if (!CollisionMaze(new_position)) {
-                pacman_position_c = new_position;
-            }
-            CollisionPoints(pacman_position_c, &g_Points);
-        }
-
-        if (tecla_S_pressionada) {
-            // Movimenta câmera para trás
-            // glm::vec4 new_position = camera_position_c + projected_w * speed * delta_t;
-            glm::vec4 new_position = pacman_position_c + projected_w * speed * delta_t;
-
-            if (!CollisionMaze(new_position)) {
-                pacman_position_c = new_position;
-            }
-            CollisionPoints(pacman_position_c, &g_Points);
-        }
-
-        if (tecla_D_pressionada) {
-            // Movimenta câmera para direita
-            //glm::vec4 new_position = camera_position_c + vetor_u * speed * delta_t;
-            glm::vec4 new_position = pacman_position_c + vetor_u * speed * delta_t;
-
-            if (!CollisionMaze(new_position)) {
-                pacman_position_c = new_position;
-            }
-            CollisionPoints(pacman_position_c, &g_Points);
-        }
-
-        // Calcula as coordenadas de câmera
-        glm::vec4 camera_view_vector;
-
-        float v_x = cos(g_CameraPhi) * sin(g_CameraTheta);
-        float v_y = sin(g_CameraPhi);
-        float v_z = cos(g_CameraPhi) * cos(g_CameraTheta);
-
-        // Se estiver em terceira pessoa
-        if (g_ThirstPerson) {
-            camera_position_c.x = pacman_position_c.x + g_CameraDistance * v_x;
-            camera_position_c.y = g_CameraDistance;
-            camera_position_c.z = pacman_position_c.z + g_CameraDistance * v_z;
-
-            camera_view_vector = pacman_position_c - camera_position_c ;
-        } else { // se estiver em primeira pessoa
-            camera_position_c = pacman_position_c;
-            camera_view_vector = glm::vec4(-v_x, v_y, -v_z, 0.0f);
-        }
-
-        glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
-
-        // Computamos a matriz "View" utilizando os parâmetros da câmera para
-        // definir o sistema de coordenadas da câmera.  Veja slides 2-14, 184-190 e 236-242 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
-        glm::mat4 view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
-
-        // Agora computamos a matriz de Projeção.
-        glm::mat4 projection;
-
-        // Note que, no sistema de coordenadas da câmera, os planos near e far
-        // estão no sentido negativo! Veja slides 176-204 do documento Aula_09_Projecoes.pdf.
-        float nearplane = -0.1f;  // Posição do "near plane"
-        float farplane  = -100.0f; // Posição do "far plane"
-
-        if (g_UsePerspectiveProjection)
-        {
-            // Projeção Perspectiva.
-            // Para definição do field of view (FOV), veja slides 205-215 do documento Aula_09_Projecoes.pdf.
-            float field_of_view = 3.141592 / 3.0f;
-            projection = Matrix_Perspective(field_of_view, g_ScreenRatio, nearplane, farplane);
-        }
-        else
-        {
-            // Projeção Ortográfica.
-            // Para definição dos valores l, r, b, t ("left", "right", "bottom", "top"),
-            // PARA PROJEÇÃO ORTOGRÁFICA veja slides 219-224 do documento Aula_09_Projecoes.pdf.
-            // Para simular um "zoom" ortográfico, computamos o valor de "t"
-            // utilizando a variável g_CameraDistance.
-            float t = 1.5f*g_CameraDistance/2.5f;
-            float b = -t;
-            float r = t*g_ScreenRatio;
-            float l = -r;
-            projection = Matrix_Orthographic(l, r, b, t, nearplane, farplane);
-        }
-
-        glm::mat4 model = Matrix_Identity(); // Transformação identidade de modelagem
-
-        // Enviamos as matrizes "view" e "projection" para a placa de vídeo
-        // (GPU). Veja o arquivo "shader_vertex.glsl", onde estas são
-        // efetivamente aplicadas em todos os pontos.
-        glUniformMatrix4fv(view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
-        glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
-        glUniform4fv(lightspositions_uniform, sizeof(lightspositions), glm::value_ptr(lightspositions[0]));
-        glUniform1i(total_lights_uniform, total_lights);
-
-        #define SPHERE       0
-        #define BUNNY        1
-        #define PLANE        2
-        #define MAZE         3
-        #define GHOST_BLINKY 4
-        #define GHOST_CLYDE  5
-        #define GHOST_INKY   6
-        #define GHOST_PINKY  7
-        #define POINT        8
-        #define POWER        9
-
-
-        // Desenhamos o modelo da esfera
-        model = Matrix_Translate(pacman_position_c.x,1.0f,pacman_position_c.z)
-              * Matrix_Scale(1.5f, 1.5f, 1.5f);
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, SPHERE);
-        DrawVirtualObject("sphere");
-
-        // Desenhamos o modelo do plano
-        model = Matrix_Translate(0.0f,-1.0f,0.0f)
-              * Matrix_Scale(40.0f, 1.0f, 40.0f);
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, PLANE);
-        DrawVirtualObject("plane");
-
-        // Desenhamos o modelo do labirinto
-        model = Matrix_Translate(0.0f,-2.0f,0.0f)
-              * Matrix_Scale(15.0f, 25.0f, 15.0f)
-              * Matrix_Rotate_Y(3.1415 * 1.5f);
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, MAZE);
-        DrawVirtualObject("maze");
-
-        // Desenhamos os modelos dos ghosts
-        float actual_time_ghosts = (float)glfwGetTime();
-        delta_t_ghosts = (actual_time_ghosts - prev_time_ghosts) * 6;
-        prev_time_ghosts = actual_time_ghosts;
-
-
-        // Blinky Ghost
-        glm::vec3 new_ghost_position = CalculeGhostPosition("Blinky_Sphere.005");
-        float new_ghost_rotateY      = CalculeGhostRotateY("Blinky_Sphere.005");
-        Ghost ghost = g_Ghosts["Blinky_Sphere.005"];
-
-        model = Matrix_Translate(new_ghost_position.x, new_ghost_position.y, new_ghost_position.z)
-              * Matrix_Scale(ghosts_scale.x, ghosts_scale.y, ghosts_scale.z)
-              * Matrix_Rotate_Y(new_ghost_rotateY)
-              * Matrix_Translate(ghost.centralization.x, ghost.centralization.y, ghost.centralization.z);
-
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, GHOST_BLINKY);
-        DrawVirtualObject("Blinky_Sphere.005");
-
-
-        // Clyde Ghost
-        new_ghost_position = CalculeGhostPosition("Clyde_Sphere.013");
-        new_ghost_rotateY  = CalculeGhostRotateY("Clyde_Sphere.013");
-        ghost = g_Ghosts["Clyde_Sphere.013"];
-
-        model = Matrix_Translate(new_ghost_position.x, new_ghost_position.y, new_ghost_position.z)
-              * Matrix_Scale(ghosts_scale.x, ghosts_scale.y, ghosts_scale.z)
-              * Matrix_Rotate_Y(new_ghost_rotateY)
-              * Matrix_Translate(ghost.centralization.x, ghost.centralization.y, ghost.centralization.z);
-
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, GHOST_CLYDE);
-        DrawVirtualObject("Clyde_Sphere.013");
-
-
-        // Inky Ghost
-        new_ghost_position = CalculeGhostPosition("Inky_Sphere.021");
-        new_ghost_rotateY  = CalculeGhostRotateY("Inky_Sphere.021");
-        ghost = g_Ghosts["Inky_Sphere.021"];
-
-        model = Matrix_Translate(new_ghost_position.x, new_ghost_position.y, new_ghost_position.z)
-              * Matrix_Scale(ghosts_scale.x, ghosts_scale.y, ghosts_scale.z)
-              * Matrix_Rotate_Y(new_ghost_rotateY)
-              * Matrix_Translate(ghost.centralization.x, ghost.centralization.y, ghost.centralization.z);
-
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, GHOST_INKY);
-        DrawVirtualObject("Inky_Sphere.021");
-
-
-        // Pinky Ghost
-        new_ghost_position = CalculeGhostPosition("Pinky_Sphere.022");
-        new_ghost_rotateY  = CalculeGhostRotateY("Pinky_Sphere.022");
-        ghost = g_Ghosts["Pinky_Sphere.022"];
-
-        model = Matrix_Translate(new_ghost_position.x, new_ghost_position.y, new_ghost_position.z)
-              * Matrix_Scale(ghosts_scale.x, ghosts_scale.y, ghosts_scale.z)
-              * Matrix_Rotate_Y(new_ghost_rotateY)
-              * Matrix_Translate(ghost.centralization.x, ghost.centralization.y, ghost.centralization.z);
-
-        glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(object_id_uniform, GHOST_PINKY);
-        DrawVirtualObject("Pinky_Sphere.022");
-
-
-        std::map<int, Point>::iterator it  = g_Points.begin();
-        std::map<int, Power>::iterator it2 = g_PowerPoints.begin();
-
-        // Points
-        while (it != g_Points.end()) {
-            Point point = it->second;
-
-            if (!point.taken) {
-                model = Matrix_Translate(point.position.x, point.position.y, point.position.z)
-                      * Matrix_Scale(0.25f, 0.25f, 0.25f);
-
-                glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-                glUniform1i(object_id_uniform, POINT);
-                DrawVirtualObject("sphere");
+                if (!CollisionMaze(new_position)) {
+                    pacman_position_c = new_position;
+                }
+                CollisionPoints(pacman_position_c, &g_Points);
             }
 
-            it++;
-        }
+            if (tecla_A_pressionada) {
+                // Movimenta pacman para esquerda
+                glm::vec4 new_position = pacman_position_c - vetor_u * speed * delta_t;
+                if (!CollisionMaze(new_position)) {
+                    pacman_position_c = new_position;
+                }
+                CollisionPoints(pacman_position_c, &g_Points);
+            }
 
-        // POWER POINT
-        float actual_time_bezier = (float)glfwGetTime();
+            if (tecla_S_pressionada) {
+                // Movimenta pacman para trás
+                glm::vec4 new_position = pacman_position_c + projected_w * speed * delta_t;
+                if (!CollisionMaze(new_position)) {
+                    pacman_position_c = new_position;
+                }
+                CollisionPoints(pacman_position_c, &g_Points);
+            }
 
-        if ((actual_time_bezier - prev_time_bezier) >= 0.01f) {
-            CalculePowerPointPosition();
-            rotate_z += 0.1f;
-            prev_time_bezier = actual_time_bezier;
-        }
+            if (tecla_D_pressionada) {
+                // Movimenta pacman para direita
+                glm::vec4 new_position = pacman_position_c + vetor_u * speed * delta_t;
+                if (!CollisionMaze(new_position)) {
+                    pacman_position_c = new_position;
+                }
+                CollisionPoints(pacman_position_c, &g_Points);
+            }
+            // Calcula as coordenadas de câmera
+            glm::vec4 camera_view_vector;
 
-        while (it2 != g_PowerPoints.end()) {
-            Power power = it2->second;
+            float v_x = cos(g_CameraPhi) * sin(g_CameraTheta);
+            float v_y = sin(g_CameraPhi);
+            float v_z = cos(g_CameraPhi) * cos(g_CameraTheta);
 
-            model = Matrix_Translate(power.actual_position.x, power.actual_position.y, power.actual_position.z)
-                  * Matrix_Scale(0.3f, 0.3f, 0.3f)
-                  * Matrix_Rotate_X(rotate_x)
-                  * Matrix_Rotate_Z(rotate_z);
+            // Se estiver em terceira pessoa
+            if (g_ThirstPerson) {
+                camera_position_c.x = pacman_position_c.x + g_CameraDistance * v_x;
+                camera_position_c.y = g_CameraDistance;
+                camera_position_c.z = pacman_position_c.z + g_CameraDistance * v_z;
+
+                camera_view_vector = pacman_position_c - camera_position_c ;
+            } else { // se estiver em primeira pessoa
+                camera_position_c = pacman_position_c;
+                camera_view_vector = glm::vec4(-v_x, v_y, -v_z, 0.0f);
+            }
+
+            glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
+
+            // Computamos a matriz "View" utilizando os parâmetros da câmera para
+            // definir o sistema de coordenadas da câmera.  Veja slides 2-14, 184-190 e 236-242 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
+            glm::mat4 view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
+
+            // Agora computamos a matriz de Projeção.
+            glm::mat4 projection;
+
+            // Note que, no sistema de coordenadas da câmera, os planos near e far
+            // estão no sentido negativo! Veja slides 176-204 do documento Aula_09_Projecoes.pdf.
+            float nearplane = -0.1f;  // Posição do "near plane"
+            float farplane  = -100.0f; // Posição do "far plane"
+
+            if (g_UsePerspectiveProjection)
+            {
+                // Projeção Perspectiva.
+                // Para definição do field of view (FOV), veja slides 205-215 do documento Aula_09_Projecoes.pdf.
+                float field_of_view = 3.141592 / 3.0f;
+                projection = Matrix_Perspective(field_of_view, g_ScreenRatio, nearplane, farplane);
+            }
+            else
+            {
+                // Projeção Ortográfica.
+                // Para definição dos valores l, r, b, t ("left", "right", "bottom", "top"),
+                // PARA PROJEÇÃO ORTOGRÁFICA veja slides 219-224 do documento Aula_09_Projecoes.pdf.
+                // Para simular um "zoom" ortográfico, computamos o valor de "t"
+                // utilizando a variável g_CameraDistance.
+                float t = 1.5f*g_CameraDistance/2.5f;
+                float b = -t;
+                float r = t*g_ScreenRatio;
+                float l = -r;
+                projection = Matrix_Orthographic(l, r, b, t, nearplane, farplane);
+            }
+
+            glm::mat4 model = Matrix_Identity(); // Transformação identidade de modelagem
+
+            // Enviamos as matrizes "view" e "projection" para a placa de vídeo
+            // (GPU). Veja o arquivo "shader_vertex.glsl", onde estas são
+            // efetivamente aplicadas em todos os pontos.
+            glUniformMatrix4fv(view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
+            glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
+            glUniform4fv(lightspositions_uniform, sizeof(lightspositions), glm::value_ptr(lightspositions[0]));
+            glUniform1i(total_lights_uniform, total_lights);
+
+            #define SPHERE       0
+            #define BUNNY        1
+            #define PLANE        2
+            #define MAZE         3
+            #define GHOST_BLINKY 4
+            #define GHOST_CLYDE  5
+            #define GHOST_INKY   6
+            #define GHOST_PINKY  7
+            #define POINT        8
+            #define POWER        9
+
+
+            // Desenhamos o modelo da esfera
+            model = Matrix_Translate(pacman_position_c.x,1.0f,pacman_position_c.z)
+                  * Matrix_Scale(1.5f, 1.5f, 1.5f);
+            glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(object_id_uniform, SPHERE);
+            DrawVirtualObject("sphere");
+
+            // Desenhamos o modelo do plano
+            model = Matrix_Translate(0.0f,-1.0f,0.0f)
+                  * Matrix_Scale(40.0f, 1.0f, 40.0f);
+            glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(object_id_uniform, PLANE);
+            DrawVirtualObject("plane");
+
+            // Desenhamos o modelo do labirinto
+            model = Matrix_Translate(0.0f,-2.0f,0.0f)
+                  * Matrix_Scale(15.0f, 25.0f, 15.0f)
+                  * Matrix_Rotate_Y(3.1415 * 1.5f);
+            glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(object_id_uniform, MAZE);
+            DrawVirtualObject("maze");
+
+            // Desenhamos os modelos dos ghosts
+            float actual_time_ghosts = (float)glfwGetTime();
+            delta_t_ghosts = (actual_time_ghosts - prev_time_ghosts) * 6;
+            prev_time_ghosts = actual_time_ghosts;
+
+
+            // Blinky Ghost
+            glm::vec3 new_ghost_position = CalculeGhostPosition("Blinky_Sphere.005");
+            float new_ghost_rotateY      = CalculeGhostRotateY("Blinky_Sphere.005");
+            Ghost ghost = g_Ghosts["Blinky_Sphere.005"];
+            model = Matrix_Translate(new_ghost_position.x, new_ghost_position.y, new_ghost_position.z)
+                  * Matrix_Scale(ghosts_scale.x, ghosts_scale.y, ghosts_scale.z)
+                  * Matrix_Rotate_Y(new_ghost_rotateY)
+                  * Matrix_Translate(ghost.centralization.x, ghost.centralization.y, ghost.centralization.z);
 
             glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-            glUniform1i(object_id_uniform, POWER);
-            DrawVirtualObject("21327_Star_v1");
+            glUniform1i(object_id_uniform, GHOST_BLINKY);
+            DrawVirtualObject("Blinky_Sphere.005");
 
-            it2++;
+
+            // Clyde Ghost
+            new_ghost_position = CalculeGhostPosition("Clyde_Sphere.013");
+            new_ghost_rotateY  = CalculeGhostRotateY("Clyde_Sphere.013");
+            ghost = g_Ghosts["Clyde_Sphere.013"];
+
+            model = Matrix_Translate(new_ghost_position.x, new_ghost_position.y, new_ghost_position.z)
+                  * Matrix_Scale(ghosts_scale.x, ghosts_scale.y, ghosts_scale.z)
+                  * Matrix_Rotate_Y(new_ghost_rotateY)
+                  * Matrix_Translate(ghost.centralization.x, ghost.centralization.y, ghost.centralization.z);
+
+            glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(object_id_uniform, GHOST_CLYDE);
+            DrawVirtualObject("Clyde_Sphere.013");
+
+
+            // Inky Ghost
+            new_ghost_position = CalculeGhostPosition("Inky_Sphere.021");
+            new_ghost_rotateY  = CalculeGhostRotateY("Inky_Sphere.021");
+            ghost = g_Ghosts["Inky_Sphere.021"];
+
+            model = Matrix_Translate(new_ghost_position.x, new_ghost_position.y, new_ghost_position.z)
+                  * Matrix_Scale(ghosts_scale.x, ghosts_scale.y, ghosts_scale.z)
+                  * Matrix_Rotate_Y(new_ghost_rotateY)
+                  * Matrix_Translate(ghost.centralization.x, ghost.centralization.y, ghost.centralization.z);
+
+            glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(object_id_uniform, GHOST_INKY);
+            DrawVirtualObject("Inky_Sphere.021");
+
+
+            // Pinky Ghost
+            new_ghost_position = CalculeGhostPosition("Pinky_Sphere.022");
+            new_ghost_rotateY  = CalculeGhostRotateY("Pinky_Sphere.022");
+            ghost = g_Ghosts["Pinky_Sphere.022"];
+
+            model = Matrix_Translate(new_ghost_position.x, new_ghost_position.y, new_ghost_position.z)
+                  * Matrix_Scale(ghosts_scale.x, ghosts_scale.y, ghosts_scale.z)
+                  * Matrix_Rotate_Y(new_ghost_rotateY)
+                  * Matrix_Translate(ghost.centralization.x, ghost.centralization.y, ghost.centralization.z);
+
+            glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(object_id_uniform, GHOST_PINKY);
+            DrawVirtualObject("Pinky_Sphere.022");
+
+
+            std::map<int, Point>::iterator it  = g_Points.begin();
+            std::map<int, Power>::iterator it2 = g_PowerPoints.begin();
+
+            // Points
+            while (it != g_Points.end()) {
+                Point point = it->second;
+
+                if (!point.taken) {
+                    model = Matrix_Translate(point.position.x, point.position.y, point.position.z)
+                          * Matrix_Scale(0.25f, 0.25f, 0.25f);
+
+                    glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+                    glUniform1i(object_id_uniform, POINT);
+                    DrawVirtualObject("sphere");
+                }
+                it++;
+            }
+
+            // POWER POINT
+            float actual_time_bezier = (float)glfwGetTime();
+
+            if ((actual_time_bezier - prev_time_bezier) >= 0.01f) {
+                CalculePowerPointPosition();
+                rotate_z += 0.1f;
+                prev_time_bezier = actual_time_bezier;
+            }
+
+            while (it2 != g_PowerPoints.end()) {
+                Power power = it2->second;
+
+                model = Matrix_Translate(power.actual_position.x, power.actual_position.y, power.actual_position.z)
+                      * Matrix_Scale(0.3f, 0.3f, 0.3f)
+                      * Matrix_Rotate_X(rotate_x)
+                      * Matrix_Rotate_Z(rotate_z);
+
+                glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+                glUniform1i(object_id_uniform, POWER);
+                DrawVirtualObject("21327_Star_v1");
+
+                it2++;
+            }
+
+
+            // Imprimimos na tela os ângulos de Euler que controlam a rotação do
+            // terceiro cubo.
+            //TextRendering_ShowEulerAngles(window);
+
+            TextRendering_ShowPositionCamera(window);
+
+            // Imprimimos na informação sobre a matriz de projeção sendo utilizada.
+            TextRendering_ShowProjection(window);
+
+            // Imprimimos na tela informação sobre o número de quadros renderizados
+            // por segundo (frames per second).
+            TextRendering_ShowFramesPerSecond(window);
+
+            // TextRendering_ShowModelViewProjection(window, projection, view, view, camera_position_c);
         }
-
-
-        // Imprimimos na tela os ângulos de Euler que controlam a rotação do
-        // terceiro cubo.
-        //TextRendering_ShowEulerAngles(window);
-
-        TextRendering_ShowPositionCamera(window);
-
-        // Imprimimos na informação sobre a matriz de projeção sendo utilizada.
-        TextRendering_ShowProjection(window);
-
-        // Imprimimos na tela informação sobre o número de quadros renderizados
-        // por segundo (frames per second).
-        TextRendering_ShowFramesPerSecond(window);
-
-        // TextRendering_ShowModelViewProjection(window, projection, view, view, camera_position_c);
 
         // O framebuffer onde OpenGL executa as operações de renderização não
         // é o mesmo que está sendo mostrado para o usuário, caso contrário
@@ -730,7 +729,7 @@ int main(int argc, char* argv[])
     glfwTerminate();
 
     // mostrar o terminal
-     ShowWindow(GetConsoleWindow(), SW_SHOW);
+    ShowWindow(GetConsoleWindow(), SW_SHOW);
 
     // Fim do programa
     return 0;
@@ -2123,6 +2122,10 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
             // necessariamente deve ter ocorrido um evento PRESS.
             ;
     }
+
+    if (key == GLFW_KEY_ENTER && g_StartGame == false) {
+        g_StartGame = true;
+    }
 }
 
 // Definimos o callback para impressão de erros da GLFW no terminal
@@ -2440,6 +2443,14 @@ void PrintObjModelInfo(ObjModel* model)
     }
     printf("\n");
   }
+}
+
+void TextRendering_InitialScreen(GLFWwindow* window){
+    TextRendering_PrintString(window, "       PACMAN       ", -0.28f,   0.1f, 2.0f);
+    TextRendering_PrintString(window, "Press Enter to Start", -0.28f,  -0.1f, 2.0f);
+
+    TextRendering_PrintString(window, "Alunos: Pedro Beck Filho      ", -1.0f,  -0.8f, 1.0f);
+    TextRendering_PrintString(window, "        Wagner Gomes Ferreira ", -1.0f,  -0.9f, 1.0f);
 }
 
 // set makeprg=cd\ ..\ &&\ make\ run\ >/dev/null
