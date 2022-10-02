@@ -246,6 +246,7 @@ bool tecla_W_pressionada = false;
 bool tecla_A_pressionada = false;
 bool tecla_S_pressionada = false;
 bool tecla_D_pressionada = false;
+bool tecla_ESPACO_pressionada = false;
 
 float delta_t = 0.0f;
 float delta_t_ghosts = 0.0f;
@@ -467,6 +468,10 @@ int main(int argc, char* argv[])
                 if (!CollisionMaze(new_position)) {
                     pacman_position_c = new_position;
                 }
+                if (CollisionTeleport(new_position)) {
+                    // teleportar o pacman para o outro lado do labirinto
+                    pacman_position_c.z *= -1;
+                }
                 CollisionPoints(pacman_position_c, &g_Points);
             }
 
@@ -475,6 +480,10 @@ int main(int argc, char* argv[])
                 glm::vec4 new_position = pacman_position_c - vetor_u * speed * delta_t;
                 if (!CollisionMaze(new_position)) {
                     pacman_position_c = new_position;
+                }
+                if (CollisionTeleport(new_position)) {
+                    // teleportar o pacman para o outro lado do labirinto
+                    pacman_position_c.z *= -1;
                 }
                 CollisionPoints(pacman_position_c, &g_Points);
             }
@@ -485,6 +494,10 @@ int main(int argc, char* argv[])
                 if (!CollisionMaze(new_position)) {
                     pacman_position_c = new_position;
                 }
+                if (CollisionTeleport(new_position)) {
+                    // teleportar o pacman para o outro lado do labirinto
+                    pacman_position_c.z *= -1;
+                }
                 CollisionPoints(pacman_position_c, &g_Points);
             }
 
@@ -494,7 +507,23 @@ int main(int argc, char* argv[])
                 if (!CollisionMaze(new_position)) {
                     pacman_position_c = new_position;
                 }
+                if (CollisionTeleport(new_position)) {
+                    // teleportar o pacman para o outro lado do labirinto
+                    pacman_position_c.z *= -1;
+                }
                 CollisionPoints(pacman_position_c, &g_Points);
+            }
+            if (tecla_ESPACO_pressionada) {
+                //Movimenta pacman para cima
+                glm::vec4 new_position = pacman_position_c + glm::vec4(0.0f, 1.0f, 0.0f, 0.0f) * speed * delta_t;
+                if (!CollisionMaze(new_position) && !CollisionPlanes(new_position)) {
+                    pacman_position_c = new_position;
+                }
+            } else {
+                glm::vec4 new_position = pacman_position_c - glm::vec4(0.0f, 1.0f, 0.0f, 0.0f) * speed * delta_t;
+                if (!CollisionMaze(new_position) && !CollisionPlanes(new_position)) {
+                    pacman_position_c = new_position;
+                }
             }
 
             // Calcula colisões com fantasmas
@@ -580,7 +609,7 @@ int main(int argc, char* argv[])
 
 
             // Desenhamos o modelo da esfera
-            model = Matrix_Translate(pacman_position_c.x,1.0f,pacman_position_c.z)
+            model = Matrix_Translate(pacman_position_c.x,pacman_position_c.y,pacman_position_c.z)
                   * Matrix_Scale(1.5f, 1.5f, 1.5f);
             glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
             glUniform1i(object_id_uniform, SPHERE);
@@ -2146,6 +2175,17 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
             // disparando eventos de repetição. Neste caso, não precisamos
             // atualizar o estado da tecla, pois antes de um evento REPEAT
             // necessariamente deve ter ocorrido um evento PRESS.
+            ;
+    }
+
+    if (key == GLFW_KEY_SPACE) {
+        if (action == GLFW_PRESS)
+            tecla_ESPACO_pressionada = true;
+
+        else if (action == GLFW_RELEASE)
+            tecla_ESPACO_pressionada = false;
+
+        else if (action == GLFW_REPEAT)
             ;
     }
 
