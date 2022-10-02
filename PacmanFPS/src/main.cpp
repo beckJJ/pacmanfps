@@ -49,7 +49,8 @@
 // Headers locais, definidos na pasta "include/"
 #include "utils.h"
 #include "matrices.h"
-#include "colisions.h"
+#include "collisions.h"
+#include "structs.h"
 
 #define MAXLIGHTS 500
 
@@ -138,42 +139,6 @@ struct SceneObject
     GLuint       vertex_array_object_id; // ID do VAO onde estão armazenados os atributos do modelo
     glm::vec3    bbox_min; // Axis-Aligned Bounding Box do objeto
     glm::vec3    bbox_max;
-};
-
-// Definimos uma estrutura que armazenará dados necessários para renderizar
-// cada ghost.
-struct Ghost
-{
-    std::string  name;           // Nome do Ghost
-    int          way;            // indica o sentido que o ghost está se locomovendo
-    float        delta_t;        // indica os passos que cada ghost dará no respectivo trecho do percurso
-    int          checkpoint;     // indica o ultimo ponto do array de posições que o ghost chegou
-    int          num_points;     // indica por quantos pontos o ghost passará na mapa
-    glm::vec3    centralization; // centraliza o ghost na origem da sua coordenada local
-    glm::vec4    positions[30];  // array de pontos do mapa que o ghost deverá passar
-};
-
-struct PointsHall
-{
-    int id;
-    glm::vec4 hall_begin;
-    glm::vec4 hall_end;
-};
-
-struct Point
-{
-    int       id;       // identificador do Point
-    glm::vec4 position; // posição do Point no mapa
-};
-
-struct Power
-{
-    int       id;
-    int       way;
-    float     t;
-    float     steps;
-    glm::vec4 actual_position;
-    glm::vec4 points[4];
 };
 
 void InitGhost(); // Função que inicializa as posições dos ghosts;
@@ -483,10 +448,11 @@ int main(int argc, char* argv[])
             // glm::vec4 new_position = camera_position_c + -projected_w * speed * delta_t;
             glm::vec4 new_position = pacman_position_c - projected_w * speed * delta_t;
 
-            if (!ColisionMaze(new_position)) {
+            if (!CollisionMaze(new_position)) {
                 //camera_position_c = new_position;
                 pacman_position_c = new_position;
             }
+            CollisionPoints(pacman_position_c, &g_Points);
         }
 
         if (tecla_A_pressionada) {
@@ -494,9 +460,10 @@ int main(int argc, char* argv[])
             //glm::vec4 new_position = camera_position_c + -vetor_u * speed * delta_t;
             glm::vec4 new_position = pacman_position_c - vetor_u * speed * delta_t;
 
-            if (!ColisionMaze(new_position)) {
+            if (!CollisionMaze(new_position)) {
                 pacman_position_c = new_position;
             }
+            CollisionPoints(pacman_position_c, &g_Points);
         }
 
         if (tecla_S_pressionada) {
@@ -504,9 +471,10 @@ int main(int argc, char* argv[])
             // glm::vec4 new_position = camera_position_c + projected_w * speed * delta_t;
             glm::vec4 new_position = pacman_position_c + projected_w * speed * delta_t;
 
-            if (!ColisionMaze(new_position)) {
+            if (!CollisionMaze(new_position)) {
                 pacman_position_c = new_position;
             }
+            CollisionPoints(pacman_position_c, &g_Points);
         }
 
         if (tecla_D_pressionada) {
@@ -514,9 +482,10 @@ int main(int argc, char* argv[])
             //glm::vec4 new_position = camera_position_c + vetor_u * speed * delta_t;
             glm::vec4 new_position = pacman_position_c + vetor_u * speed * delta_t;
 
-            if (!ColisionMaze(new_position)) {
+            if (!CollisionMaze(new_position)) {
                 pacman_position_c = new_position;
             }
+            CollisionPoints(pacman_position_c, &g_Points);
         }
 
         // Calcula as coordenadas de câmera
@@ -690,12 +659,14 @@ int main(int argc, char* argv[])
         while (it != g_Points.end()) {
             Point point = it->second;
 
-            model = Matrix_Translate(point.position.x, point.position.y, point.position.z)
-                  * Matrix_Scale(0.25f, 0.25f, 0.25f);
+            if (!point.taken) {
+                model = Matrix_Translate(point.position.x, point.position.y, point.position.z)
+                      * Matrix_Scale(0.25f, 0.25f, 0.25f);
 
-            glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-            glUniform1i(object_id_uniform, POINT);
-            DrawVirtualObject("sphere");
+                glUniformMatrix4fv(model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+                glUniform1i(object_id_uniform, POINT);
+                DrawVirtualObject("sphere");
+            }
 
             it++;
         }
@@ -1100,6 +1071,8 @@ void InitPoints() {
                 point.id = actual_id;
 
                 point.position = glm::vec4(initial_position_x + actual_step, point_height, initial_position_z, 1.0f);
+                point.taken = 0;
+
                 g_Points[point.id] = point;
 
                 //InsertLightsPositions(point.id, point.position);
@@ -1112,6 +1085,8 @@ void InitPoints() {
                 point.id = actual_id;
 
                 point.position = glm::vec4(initial_position_x, point_height, initial_position_z + actual_step, 1.0f);
+                point.taken = 0;
+
                 g_Points[point.id] = point;
 
                 //InsertLightsPositions(point.id, point.position);
