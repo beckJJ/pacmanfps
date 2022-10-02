@@ -147,12 +147,12 @@ void InitPointsHalls();
 void InitPoints();
 void InitPowerPoints();
 
-glm::vec3 CalculeGhostPosition(const char* ghost_name); // Função que calcula a nova posição do ghost
-float CalculeGhostRotateY(const char* ghost_name); // calcula a rotação em torno do eixo Y que deve ser aplicado no ghost
+glm::vec4 CalculateGhostPosition(const char* ghost_name); // Função que calcula a nova posição do ghost
+float CalculateGhostRotationY(const char* ghost_name); // calcula a rotação em torno do eixo Y que deve ser aplicado no ghost
 int GetNextCheckpoint(Ghost ghost); // Função que retorna o checkpoint posterior ao atual do ghost
 int GetPreviousCheckpoint(Ghost ghost); // Função que retorna o checkpoint anterior ao atual do ghost
 void UpdateGhostWay(const char* ghost_name); // Função que atualiza o sentido que o ghost irá se locomover
-void CalculePowerPointPosition(); // Função que calcula a nova posição de um Power Point
+void CalculatePowerPointPosition(); // Função que calcula a nova posição de um Power Point
 void InsertLightsPositions(int pointer, glm::vec4 position); // Função que insere nova posição de uma lux no array
 
 
@@ -193,7 +193,7 @@ bool g_LeftMouseButtonPressed = false;
 bool g_RightMouseButtonPressed = false; // Análogo para botão direito do mouse
 bool g_MiddleMouseButtonPressed = false; // Análogo para botão do meio do mouse
 
-bool g_ThirstPerson = false;
+bool g_ThirdPerson = false;
 
 // Variáveis que definem a câmera em coordenadas esféricas, controladas pelo
 // usuário através do mouse (veja função CursorPosCallback()). A posição
@@ -219,6 +219,10 @@ bool g_ShowInfoText = true;
 
 // Variavel que controla o inicio do jogo
 bool g_StartGame = false;
+
+// Variaveis que controlam o fim do jogo
+bool g_EndGame = false;
+bool g_GameWon = false;
 
 // Variáveis que definem um programa de GPU (shaders). Veja função LoadShadersFromFiles().
 GLuint vertex_shader_id;
@@ -442,6 +446,10 @@ int main(int argc, char* argv[])
         if (!g_StartGame) {
             TextRendering_InitialScreen(window);
         } else {
+            if (g_EndGame) {
+                system("pause");
+                exit(1);
+            }
             // Atualiza delta de tempo
             float current_time = (float)glfwGetTime();
             delta_t = current_time - prev_time;
@@ -488,6 +496,13 @@ int main(int argc, char* argv[])
                 }
                 CollisionPoints(pacman_position_c, &g_Points);
             }
+
+            // Calcula colisões com fantasmas
+            if (CollisionGhostsPacman(pacman_position_c, g_Ghosts)) {
+                // reseta posição do pacman para posição inicial
+                pacman_position_c  = glm::vec4(-13.0f, 1.0f, 0.0f, 1.0f);
+            }
+
             // Calcula as coordenadas de câmera
             glm::vec4 camera_view_vector;
 
@@ -496,7 +511,7 @@ int main(int argc, char* argv[])
             float v_z = cos(g_CameraPhi) * cos(g_CameraTheta);
 
             // Se estiver em terceira pessoa
-            if (g_ThirstPerson) {
+            if (g_ThirdPerson) {
                 camera_position_c.x = pacman_position_c.x + g_CameraDistance * v_x;
                 camera_position_c.y = g_CameraDistance;
                 camera_position_c.z = pacman_position_c.z + g_CameraDistance * v_z;
@@ -593,9 +608,11 @@ int main(int argc, char* argv[])
 
 
             // Blinky Ghost
-            glm::vec3 new_ghost_position = CalculeGhostPosition("Blinky_Sphere.005");
-            float new_ghost_rotateY      = CalculeGhostRotateY("Blinky_Sphere.005");
+            glm::vec4 new_ghost_position = CalculateGhostPosition("Blinky_Sphere.005");
+            float new_ghost_rotateY      = CalculateGhostRotationY("Blinky_Sphere.005");
             Ghost ghost = g_Ghosts["Blinky_Sphere.005"];
+            ghost.current_position = new_ghost_position;
+            g_Ghosts["Blinky_Sphere.005"] = ghost;
             model = Matrix_Translate(new_ghost_position.x, new_ghost_position.y, new_ghost_position.z)
                   * Matrix_Scale(ghosts_scale.x, ghosts_scale.y, ghosts_scale.z)
                   * Matrix_Rotate_Y(new_ghost_rotateY)
@@ -607,10 +624,11 @@ int main(int argc, char* argv[])
 
 
             // Clyde Ghost
-            new_ghost_position = CalculeGhostPosition("Clyde_Sphere.013");
-            new_ghost_rotateY  = CalculeGhostRotateY("Clyde_Sphere.013");
+            new_ghost_position = CalculateGhostPosition("Clyde_Sphere.013");
+            new_ghost_rotateY  = CalculateGhostRotationY("Clyde_Sphere.013");
             ghost = g_Ghosts["Clyde_Sphere.013"];
-
+            ghost.current_position = new_ghost_position;
+            g_Ghosts["Clyde_Sphere.013"] = ghost;
             model = Matrix_Translate(new_ghost_position.x, new_ghost_position.y, new_ghost_position.z)
                   * Matrix_Scale(ghosts_scale.x, ghosts_scale.y, ghosts_scale.z)
                   * Matrix_Rotate_Y(new_ghost_rotateY)
@@ -622,10 +640,11 @@ int main(int argc, char* argv[])
 
 
             // Inky Ghost
-            new_ghost_position = CalculeGhostPosition("Inky_Sphere.021");
-            new_ghost_rotateY  = CalculeGhostRotateY("Inky_Sphere.021");
+            new_ghost_position = CalculateGhostPosition("Inky_Sphere.021");
+            new_ghost_rotateY  = CalculateGhostRotationY("Inky_Sphere.021");
             ghost = g_Ghosts["Inky_Sphere.021"];
-
+            ghost.current_position = new_ghost_position;
+            g_Ghosts["Inky_Sphere.021"] = ghost;
             model = Matrix_Translate(new_ghost_position.x, new_ghost_position.y, new_ghost_position.z)
                   * Matrix_Scale(ghosts_scale.x, ghosts_scale.y, ghosts_scale.z)
                   * Matrix_Rotate_Y(new_ghost_rotateY)
@@ -637,10 +656,11 @@ int main(int argc, char* argv[])
 
 
             // Pinky Ghost
-            new_ghost_position = CalculeGhostPosition("Pinky_Sphere.022");
-            new_ghost_rotateY  = CalculeGhostRotateY("Pinky_Sphere.022");
+            new_ghost_position = CalculateGhostPosition("Pinky_Sphere.022");
+            new_ghost_rotateY  = CalculateGhostRotationY("Pinky_Sphere.022");
             ghost = g_Ghosts["Pinky_Sphere.022"];
-
+            ghost.current_position = new_ghost_position;
+            g_Ghosts["Pinky_Sphere.022"] = ghost;
             model = Matrix_Translate(new_ghost_position.x, new_ghost_position.y, new_ghost_position.z)
                   * Matrix_Scale(ghosts_scale.x, ghosts_scale.y, ghosts_scale.z)
                   * Matrix_Rotate_Y(new_ghost_rotateY)
@@ -655,10 +675,12 @@ int main(int argc, char* argv[])
             std::map<int, Power>::iterator it2 = g_PowerPoints.begin();
 
             // Points
+            int num_not_taken = 0;
             while (it != g_Points.end()) {
                 Point point = it->second;
 
                 if (!point.taken) {
+                    num_not_taken++;
                     model = Matrix_Translate(point.position.x, point.position.y, point.position.z)
                           * Matrix_Scale(0.25f, 0.25f, 0.25f);
 
@@ -668,12 +690,16 @@ int main(int argc, char* argv[])
                 }
                 it++;
             }
+            if (num_not_taken == 0) {
+                g_EndGame = true;
+                printf("You won The Game!\n");
+            }
 
             // POWER POINT
             float actual_time_bezier = (float)glfwGetTime();
 
             if ((actual_time_bezier - prev_time_bezier) >= 0.01f) {
-                CalculePowerPointPosition();
+                CalculatePowerPointPosition();
                 rotate_z += 0.1f;
                 prev_time_bezier = actual_time_bezier;
             }
@@ -1181,7 +1207,7 @@ void UpdateGhostWay(const char* ghost_name) {
 }
 
 // Função que calcula a próxima posição dos ghosts no mapa
-glm::vec3 CalculeGhostPosition(const char* ghost_name)
+glm::vec4 CalculateGhostPosition(const char* ghost_name)
 {
     // Pega todas as informações do ghost
     Ghost ghost = g_Ghosts[ghost_name];
@@ -1212,11 +1238,11 @@ glm::vec3 CalculeGhostPosition(const char* ghost_name)
         g_Ghosts[ghost_name].delta_t += delta_t_ghosts / distance_initial;
     }
 
-    return glm::vec3(new_position.x,new_position.y,new_position.z);
+    return glm::vec4(new_position.x,new_position.y,new_position.z, 1.0f);
 }
 
 // Função que calcula a rotação no eixo Y que deve ser aplicada no ghost
-float CalculeGhostRotateY(const char* ghost_name) {
+float CalculateGhostRotationY(const char* ghost_name) {
     Ghost ghost = g_Ghosts[ghost_name];
 
     float y = 0.0f;
@@ -1232,7 +1258,7 @@ float CalculeGhostRotateY(const char* ghost_name) {
     return y;
 }
 
-void CalculePowerPointPosition()
+void CalculatePowerPointPosition()
 {
     std::map<int, Power>::iterator it = g_PowerPoints.begin();
 
@@ -2024,11 +2050,11 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     // Se o usuário apertar a tecla C, mudamos de primeira pessoa para terceira e vice-versa.
     if (key == GLFW_KEY_C && action == GLFW_PRESS)
     {
-        if (g_ThirstPerson){
-            g_ThirstPerson = false;
+        if (g_ThirdPerson){
+            g_ThirdPerson = false;
             //g_CameraDistance = 0.0f;
         } else {
-            g_ThirstPerson = true;
+            g_ThirdPerson = true;
             //g_CameraDistance = 2.5f;
         }
     }

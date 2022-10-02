@@ -763,3 +763,122 @@ void CollisionPoints(glm::vec4 pacman_position, std::map<int, Point> *g_Points)
         it++;
     }
 }
+
+int CollisionGhostsPacman(glm::vec4 pacman_position, std::map<std::string, Ghost> g_Ghosts)
+{
+    glm::vec4 pacman_points[8] = {pacman_position + glm::vec4( 1.0, 1.0, 1.0,0.0f),
+                                  pacman_position + glm::vec4( 1.0, 1.0,-1.0,0.0f),
+                                  pacman_position + glm::vec4( 1.0,-1.0, 1.0,0.0f),
+                                  pacman_position + glm::vec4( 1.0,-1.0,-1.0,0.0f),
+                                  pacman_position + glm::vec4(-1.0, 1.0, 1.0,0.0f),
+                                  pacman_position + glm::vec4(-1.0, 1.0,-1.0,0.0f),
+                                  pacman_position + glm::vec4(-1.0,-1.0, 1.0,0.0f),
+                                  pacman_position + glm::vec4(-1.0,-1.0,-1.0,0.0f)};
+    glm::vec4 pacman_start = pacman_points[7];
+    glm::vec4 pacman_end = pacman_points[0];
+
+    Ghost blinky = g_Ghosts["Blinky_Sphere.005"];
+    glm::vec4 blinky_points[8] = {blinky.current_position + glm::vec4( 2.0, 4.0, 2.0,0.0f),
+                                  blinky.current_position + glm::vec4( 2.0, 4.0,-2.0,0.0f),
+                                  blinky.current_position + glm::vec4( 2.0,-4.0, 2.0,0.0f),
+                                  blinky.current_position + glm::vec4( 2.0,-4.0,-2.0,0.0f),
+                                  blinky.current_position + glm::vec4(-2.0, 4.0, 2.0,0.0f),
+                                  blinky.current_position + glm::vec4(-2.0, 4.0,-2.0,0.0f),
+                                  blinky.current_position + glm::vec4(-2.0,-4.0, 2.0,0.0f),
+                                  blinky.current_position + glm::vec4(-2.0,-4.0,-2.0,0.0f)};
+    glm::vec4 blinky_start = blinky_points[7];
+    glm::vec4 blinky_end = blinky_points[0];
+    for (int i = 0; i < 8; i++) {
+        if (pacman_points[i].x >= blinky_start.x && pacman_points[i].x <= blinky_end.x &&
+            pacman_points[i].y >= blinky_start.y && pacman_points[i].y <= blinky_end.y &&
+            pacman_points[i].z >= blinky_start.z && pacman_points[i].z <= blinky_end.z) {
+            return 1;
+        }
+    }
+    for (int i = 0; i < 8; i++) {
+        if (blinky_points[i].x >= pacman_start.x && blinky_points[i].x <= pacman_end.x &&
+            blinky_points[i].y >= pacman_start.y && blinky_points[i].y <= pacman_end.y &&
+            blinky_points[i].z >= pacman_start.z && blinky_points[i].z <= pacman_end.z) {
+            return 1;
+        }
+    }
+
+    Ghost clyde = g_Ghosts["Clyde_Sphere.013"];
+    glm::vec4 clyde_points[8] = {clyde.current_position + glm::vec4( 2.0, 4.0, 2.0,0.0f),
+                                 clyde.current_position + glm::vec4( 2.0, 4.0,-2.0,0.0f),
+                                 clyde.current_position + glm::vec4( 2.0,-4.0, 2.0,0.0f),
+                                 clyde.current_position + glm::vec4( 2.0,-4.0,-2.0,0.0f),
+                                 clyde.current_position + glm::vec4(-2.0, 4.0, 2.0,0.0f),
+                                 clyde.current_position + glm::vec4(-2.0, 4.0,-2.0,0.0f),
+                                 clyde.current_position + glm::vec4(-2.0,-4.0, 2.0,0.0f),
+                                 clyde.current_position + glm::vec4(-2.0,-4.0,-2.0,0.0f)};
+    glm::vec4 clyde_start = clyde_points[7];
+    glm::vec4 clyde_end = clyde_points[0];
+    for (int i = 0; i < 8; i++) {
+        if (pacman_points[i].x >= clyde_start.x && pacman_points[i].x <= clyde_end.x &&
+            pacman_points[i].y >= clyde_start.y && pacman_points[i].y <= clyde_end.y &&
+            pacman_points[i].z >= clyde_start.z && pacman_points[i].z <= clyde_end.z) {
+            return 1;
+        }
+    }
+    for (int i = 0; i < 8; i++) {
+        if (clyde_points[i].x >= pacman_start.x && clyde_points[i].x <= pacman_end.x &&
+            clyde_points[i].y >= pacman_start.y && clyde_points[i].y <= pacman_end.y &&
+            clyde_points[i].z >= pacman_start.z && clyde_points[i].z <= pacman_end.z) {
+            return 1;
+        }
+    }
+
+    Ghost inky = g_Ghosts["Inky_Sphere.021"];
+    glm::vec4 inky_points[8] = {inky.current_position + glm::vec4( 2.0, 4.0, 2.0,0.0f),
+                                inky.current_position + glm::vec4( 2.0, 4.0,-2.0,0.0f),
+                                inky.current_position + glm::vec4( 2.0,-4.0, 2.0,0.0f),
+                                inky.current_position + glm::vec4( 2.0,-4.0,-2.0,0.0f),
+                                inky.current_position + glm::vec4(-2.0, 4.0, 2.0,0.0f),
+                                inky.current_position + glm::vec4(-2.0, 4.0,-2.0,0.0f),
+                                inky.current_position + glm::vec4(-2.0,-4.0, 2.0,0.0f),
+                                inky.current_position + glm::vec4(-2.0,-4.0,-2.0,0.0f)};
+    glm::vec4 inky_start = inky_points[7];
+    glm::vec4 inky_end = inky_points[0];
+    for (int i = 0; i < 8; i++) {
+        if (pacman_points[i].x >= inky_start.x && pacman_points[i].x <= inky_end.x &&
+            pacman_points[i].y >= inky_start.y && pacman_points[i].y <= inky_end.y &&
+            pacman_points[i].z >= inky_start.z && pacman_points[i].z <= inky_end.z) {
+            return 1;
+        }
+    }
+    for (int i = 0; i < 8; i++) {
+        if (inky_points[i].x >= pacman_start.x && inky_points[i].x <= pacman_end.x &&
+            inky_points[i].y >= pacman_start.y && inky_points[i].y <= pacman_end.y &&
+            inky_points[i].z >= pacman_start.z && inky_points[i].z <= pacman_end.z) {
+            return 1;
+        }
+    }
+
+    Ghost pinky = g_Ghosts["Pinky_Sphere.022"];
+    glm::vec4 pinky_points[8] = {pinky.current_position + glm::vec4( 2.0, 4.0, 2.0,0.0f),
+                                 pinky.current_position + glm::vec4( 2.0, 4.0,-2.0,0.0f),
+                                 pinky.current_position + glm::vec4( 2.0,-4.0, 2.0,0.0f),
+                                 pinky.current_position + glm::vec4( 2.0,-4.0,-2.0,0.0f),
+                                 pinky.current_position + glm::vec4(-2.0, 4.0, 2.0,0.0f),
+                                 pinky.current_position + glm::vec4(-2.0, 4.0,-2.0,0.0f),
+                                 pinky.current_position + glm::vec4(-2.0,-4.0, 2.0,0.0f),
+                                 pinky.current_position + glm::vec4(-2.0,-4.0,-2.0,0.0f)};
+    glm::vec4 pinky_start = pinky_points[7];
+    glm::vec4 pinky_end = pinky_points[0];
+    for (int i = 0; i < 8; i++) {
+        if (pacman_points[i].x >= pinky_start.x && pacman_points[i].x <= pinky_end.x &&
+            pacman_points[i].y >= pinky_start.y && pacman_points[i].y <= pinky_end.y &&
+            pacman_points[i].z >= pinky_start.z && pacman_points[i].z <= pinky_end.z) {
+            return 1;
+        }
+    }
+    for (int i = 0; i < 8; i++) {
+        if (pinky_points[i].x >= pacman_start.x && pinky_points[i].x <= pacman_end.x &&
+            pinky_points[i].y >= pacman_start.y && pinky_points[i].y <= pacman_end.y &&
+            pinky_points[i].z >= pacman_start.z && pinky_points[i].z <= pacman_end.z) {
+            return 1;
+        }
+    }
+    return 0;
+}

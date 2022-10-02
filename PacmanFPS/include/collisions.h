@@ -8,6 +8,7 @@
 
 int CollisionMaze(glm::vec4 camera_position);
 void CollisionPoints(glm::vec4 pacman_position, std::map<int, Point> *g_Points);
+int CollisionGhostsPacman(glm::vec4 pacman_position, std::map<std::string, Ghost> g_Ghosts);
 
 #endif // _COLLISIONS_H
 

@@ -16,6 +16,7 @@ struct Ghost
     int          num_points;     // indica por quantos pontos o ghost passará na mapa
     glm::vec3    centralization; // centraliza o ghost na origem da sua coordenada local
     glm::vec4    positions[30];  // array de pontos do mapa que o ghost deverá passar
+    glm::vec4    current_position; // posição atual do ghost
 };
 
 struct PointsHall
