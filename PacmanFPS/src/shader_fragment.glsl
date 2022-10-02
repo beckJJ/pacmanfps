@@ -7,6 +7,8 @@
 in vec4 position_world;
 in vec4 normal;
 
+in vec3 color_v;
+
 // Posição do vértice atual no sistema de coordenadas local do modelo.
 in vec4 position_model;
 
@@ -93,6 +95,7 @@ void main()
     float U = 0.0;
     float V = 0.0;
 
+    /*
     if ( object_id == SPHERE )
     {
         // PREENCHA AQUI
@@ -102,7 +105,9 @@ void main()
         Ka = vec3(0.4, 0.2, 0.04);
         q = 1.0;
     }
-    else if ( object_id == PLANE )
+    else*/
+
+    if ( object_id == PLANE )
     {
         // Coordenadas de textura do plano, obtidas do arquivo OBJ.
         U = texcoords.x * 5;
@@ -110,15 +115,9 @@ void main()
 
         // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
         Kd = texture(TextureImage2, vec2(U,V)).rgb;
-
-        // Propriedades espectrais do plano
         Ks = vec3(0.3,0.3,0.3);
         Ka = vec3(0.0,0.0,0.0);
         q = 20.0;
-
-        // Equação de Iluminação
-        float lambert = max(0, dot(n,l));
-        color.rgb = Kd * (lambert + 0.01);
     }
     else if ( object_id == MAZE )
     {
@@ -131,10 +130,6 @@ void main()
         Ks = vec3(0.0,0.0,0.0);
         Ka = vec3(0.0,0.0,0.0);
         q = 50.0;
-
-        // Equação de Iluminação
-        float lambert = max(0, dot(n,l));
-        color.rgb = Kd * (lambert + 0.01);
     }
     else if ( object_id == GHOST_BLINKY )
     {
@@ -196,54 +191,71 @@ void main()
         q = 1.0;
     }
 
-    // Espectro da fonte de iluminação
-    vec3 I = vec3(1.0,1.0,1.0); // PREENCHA AQUI o espectro da fonte de luz
+    int  color_a;
+    vec3 color_rgb;
 
-    // Espectro da luz ambiente
-    vec3 Ia = vec3(0.2,0.2,0.2); // PREENCHA AQUI o espectro da luz ambiente
+    if (object_id != SPHERE) {
+        // Espectro da fonte de iluminação
+        vec3 I = vec3(1.0,1.0,1.0); // PREENCHA AQUI o espectro da fonte de luz
 
-    // Termo difuso utilizando a lei dos cossenos de Lambert
-    //vec3 lambert_diffuse_term = Kd * I * max(0, dot(n, l)); // PREENCHA AQUI o termo difuso de Lambert
+        // Espectro da luz ambiente
+        vec3 Ia = vec3(0.2,0.2,0.2); // PREENCHA AQUI o espectro da luz ambiente
 
-    // Termo ambiente
-    //vec3 ambient_term = Ka * Ia; // PREENCHA AQUI o termo ambiente
+        // Termo difuso utilizando a lei dos cossenos de Lambert
+        vec3 lambert_diffuse_term = Kd * I * max(0, dot(n, l)); // PREENCHA AQUI o termo difuso de Lambert
 
-    // Termo especular utilizando o modelo de iluminação de Phong
-    //vec3 phong_specular_term  = Ks * I * pow(max(0, dot(r, v)), q); // PREENCH AQUI o termo especular de Phong
+        // Termo ambiente
+        vec3 ambient_term = Ka * Ia; // PREENCHA AQUI o termo ambiente
+
+        // Termo especular utilizando o modelo de iluminação de Phong
+        vec3 phong_specular_term  = Ks * I * pow(max(0, dot(r, v)), q); // PREENCH AQUI o termo especular de Phong
 
 
-    // NOTE: Se você quiser fazer o rendering de objetos transparentes, é
-    // necessário:
-    // 1) Habilitar a operação de "blending" de OpenGL logo antes de realizar o
-    //    desenho dos objetos transparentes, com os comandos abaixo no código C++:
-    //      glEnable(GL_BLEND);
-    //      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    // 2) Realizar o desenho de todos objetos transparentes *após* ter desenhado
-    //    todos os objetos opacos; e
-    // 3) Realizar o desenho de objetos transparentes ordenados de acordo com
-    //    suas distâncias para a câmera (desenhando primeiro objetos
-    //    transparentes que estão mais longe da câmera).
-    // Alpha default = 1 = 100% opaco = 0% transparente
-    //color.a = 1;
+        // NOTE: Se você quiser fazer o rendering de objetos transparentes, é
+        // necessário:
+        // 1) Habilitar a operação de "blending" de OpenGL logo antes de realizar o
+        //    desenho dos objetos transparentes, com os comandos abaixo no código C++:
+        //      glEnable(GL_BLEND);
+        //      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        // 2) Realizar o desenho de todos objetos transparentes *após* ter desenhado
+        //    todos os objetos opacos; e
+        // 3) Realizar o desenho de objetos transparentes ordenados de acordo com
+        //    suas distâncias para a câmera (desenhando primeiro objetos
+        //    transparentes que estão mais longe da câmera).
+        // Alpha default = 1 = 100% opaco = 0% transparente
+        //color.a = 1;
 
-    // Cor final do fragmento calculada com uma combinação dos termos difuso,
-    // especular, e ambiente. Veja slide 129 do documento Aula_17_e_18_Modelos_de_Iluminacao.pdf.
-    //color.rgb = color.rgb + (lambert_diffuse_term + ambient_term + phong_specular_term);
+        // Cor final do fragmento calculada com uma combinação dos termos difuso,
+        // especular, e ambiente. Veja slide 129 do documento Aula_17_e_18_Modelos_de_Iluminacao.pdf.
+        //color.rgb = lambert_diffuse_term + ambient_term + phong_specular_term;
+        color_rgb = lambert_diffuse_term + ambient_term + phong_specular_term;
 
-    for (int i = 0; i < total_lights; i++) {
-        l = normalize(lightspositions[i] - p);
-        r = -l + 2 * n * (dot(n, l));
+        vec3 sum_lights = vec3(0.0f, 0.0f, 0.0f);
 
-        vec3 lambert_diffuse_term = Kd * I * max(0, dot(n, l));
-        vec3 ambient_term         = Ka * Ia;
-        vec3 phong_specular_term  = Ks * I * pow(max(0, dot(r, v)), q);
+        for (int i = 0; i < total_lights; i++) {
+            I = vec3(1.0,1.0,0.0);
 
-        color.a = 1;
-        color.rgb = color.rgb + (lambert_diffuse_term + ambient_term + phong_specular_term);
+            l = normalize(lightspositions[i] - p);
+            r = -l + 2 * n * (dot(n, l));
+
+            vec3 lambert_diffuse_term = Kd * I * max(0, dot(n, l));
+            vec3 phong_specular_term  = Ks * I * pow(max(0, dot(r, v)), q);
+
+            sum_lights += (lambert_diffuse_term + phong_specular_term);
+        }
+
+        color_a = 1;
+        color_rgb = color_rgb + ambient_term + sum_lights;
     }
+    else
+    {
+        color_a   = 1;
+        color_rgb = color_v;
+    }
+
+    color.a = color_a;
 
     // Cor final com correção gamma, considerando monitor sRGB.
     // Veja https://en.wikipedia.org/w/index.php?title=Gamma_correction&oldid=751281772#Windows.2C_Mac.2C_sRGB_and_TV.2Fvideo_standard_gammas
-    color.rgb = pow(color.rgb, vec3(1.0,1.0,1.0)/2.2);
+    color.rgb = pow(color_rgb, vec3(1.0,1.0,1.0)/2.2);
 }
-
