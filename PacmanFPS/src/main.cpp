@@ -2560,8 +2560,13 @@ void PrintObjModelInfo(ObjModel* model)
 
 void TextRendering_InitialScreen(GLFWwindow* window)
 {
-    TextRendering_PrintString(window, "       PACMAN       ", -0.40f,   0.1f, 2.0f);
-    TextRendering_PrintString(window, "Press Enter to Start", -0.40f,  -0.1f, 2.0f);
+    float charwidth = TextRendering_CharWidth(window);
+
+    //TextRendering_PrintString(window, "       PACMAN       ", -0.40f,   0.1f, 2.0f);
+    //TextRendering_PrintString(window, "Press Enter to Start", -0.40f,  -0.1f, 2.0f);
+
+    TextRendering_PrintString(window, "       PACMAN       ", 0.0f - (2.2 * 9 * charwidth),     0.1f, 2.0f);
+    TextRendering_PrintString(window, "Press Enter to Start", 0.0f - (2.2 * 9 * charwidth),    -0.1f, 2.0f);
 
     TextRendering_PrintString(window, "Alunos: Pedro Company Beck    ", -1.0f,  -0.8f, 1.0f);
     TextRendering_PrintString(window, "        Wagner Gomes Ferreira ", -1.0f,  -0.9f, 1.0f);
