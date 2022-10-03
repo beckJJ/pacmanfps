@@ -2950,7 +2950,7 @@
 1662920228 d:\ufrgs\2022-1\fcg\pacmanfps\pacmanfps\include\glm\ext\scalar_uint_sized.hpp
 	"../detail/setup.hpp"
 
-1664754328 source:d:\ufrgs\2022-1\fcg\pacmanfps\pacmanfps\src\collisions.cpp
+1664754456 source:d:\ufrgs\2022-1\fcg\pacmanfps\pacmanfps\src\collisions.cpp
 	"collisions.h"
 
 1662920228 source:d:\ufrgs\2022-1\fcg\pacmanfps\pacmanfps\src\glad.c
@@ -2978,11 +2978,13 @@
 	<inttypes.h>
 	<stdint.h>
 
-1664751917 source:d:\ufrgs\2022-1\fcg\pacmanfps\pacmanfps\src\main.cpp
+1664757053 source:d:\ufrgs\2022-1\fcg\pacmanfps\pacmanfps\src\main.cpp
 	<cmath>
 	<cstdio>
 	<cstdlib>
 	<windows.h>
+	<stdlib.h>
+	<string.h>
 	<map>
 	<stack>
 	<string>
@@ -3108,7 +3110,7 @@
 1662920228 source:d:\ufrgs\2022-1\fcg\pacmanfps\pacmanfps\src\tiny_obj_loader.cpp
 	"tiny_obj_loader.h"
 
-1664754406 d:\ufrgs\2022-1\fcg\pacmanfps\pacmanfps\include\collisions.h
+1664754433 d:\ufrgs\2022-1\fcg\pacmanfps\pacmanfps\include\collisions.h
 	<glm/vec4.hpp>
 	<math.h>
 	<map>

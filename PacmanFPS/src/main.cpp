@@ -114,6 +114,8 @@ void TextRendering_PrintMatrixVectorProductMoreDigits(GLFWwindow* window, glm::m
 void TextRendering_PrintMatrixVectorProductDivW(GLFWwindow* window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
 void TextRendering_InitialScreen(GLFWwindow* window);
 void TextRendering_ShowLivesAndPoints(GLFWwindow* window);
+void TextRendering_GameWon(GLFWwindow* window);
+void TextRendering_GameLost(GLFWwindow* window);
 
 // Funções abaixo renderizam como texto na janela OpenGL algumas matrizes e
 // outras informações do programa. Definidas após main().
@@ -453,11 +455,8 @@ int main(int argc, char* argv[])
         // Se não foi clicado Enter para o jogo iniciar
         if (!g_StartGame) {
             TextRendering_InitialScreen(window);
-        } else {
-            if (g_EndGame) {
-                system("pause");
-                exit(1);
-            }
+        }
+        else if (!g_EndGame) {
             // Atualiza delta de tempo
             float current_time = (float)glfwGetTime();
             delta_t = current_time - prev_time;
@@ -801,6 +800,13 @@ int main(int argc, char* argv[])
             TextRendering_ShowFramesPerSecond(window);
 
             // TextRendering_ShowModelViewProjection(window, projection, view, view, camera_position_c);
+        }
+        else {
+            if (g_GameWon) {
+                TextRendering_GameWon(window);
+            } else {
+                TextRendering_GameLost(window);
+            }
         }
 
         // O framebuffer onde OpenGL executa as operações de renderização não
@@ -2552,7 +2558,8 @@ void PrintObjModelInfo(ObjModel* model)
   }
 }
 
-void TextRendering_InitialScreen(GLFWwindow* window){
+void TextRendering_InitialScreen(GLFWwindow* window)
+{
     TextRendering_PrintString(window, "       PACMAN       ", -0.40f,   0.1f, 2.0f);
     TextRendering_PrintString(window, "Press Enter to Start", -0.40f,  -0.1f, 2.0f);
 
@@ -2570,16 +2577,28 @@ void TextRendering_ShowLivesAndPoints(GLFWwindow* window)
 
     snprintf(buffer, 20, "Pontos: %d", g_TotalPoints);
     TextRendering_PrintString(window, buffer, -1.0f, 1.0f-(2*lineheight), 1.0f);
+}
 
-  /*  char *StrNumVidas = malloc(strlen(vidas) + strlen(numLives) + 1);
-    strcpy(StrNumVidas, vidas);
-    strcat(StrNumVidas, numLives);
-
-    char *StrNumPoints = itoa(g_TotalPoints, StrNumPoints, 10);
-    float lineheight = TextRendering_LineHeight(window);
+void TextRendering_GameWon(GLFWwindow* window)
+{
+    char buffer[30];
     float charwidth = TextRendering_CharWidth(window);
+    TextRendering_PrintString(window, "Congratulations", 0.0f - (4 * 7.5 * charwidth),   0.2f, 4.0f);
+    TextRendering_PrintString(window, "You won the Game", 0.0f - (2 * 9 * charwidth),  -0.1f, 2.0f);
 
-    TextRendering_PrintString(window, StrNumVidas, -1.0f-lineheight, 1.0f);*/
+    snprintf(buffer, 30, "Total points: %d", g_TotalPoints);
+    TextRendering_PrintString(window, buffer, 0.0f - (2 * 9 * charwidth),  -0.3f, 1.0f);
+}
+
+void TextRendering_GameLost(GLFWwindow* window)
+{
+    char buffer[30];
+    float charwidth = TextRendering_CharWidth(window);
+    TextRendering_PrintString(window, "Game Over", 0.0f - (5 * 4.5 * charwidth),   0.2f, 5.0f);
+    TextRendering_PrintString(window, "You lost the Game", 0.0f - (2 * 9 * charwidth),  -0.1f, 2.0f);
+
+    snprintf(buffer, 30, "Total points: %d", g_TotalPoints);
+    TextRendering_PrintString(window, buffer, 0.0f - (2 * 9 * charwidth),  -0.3f, 1.0f);
 }
 
 // set makeprg=cd\ ..\ &&\ make\ run\ >/dev/null
