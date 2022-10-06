@@ -451,13 +451,11 @@ int CollisionMaze(glm::vec4 pacman_position)
     glm::vec4 M1_b = glm::vec4(31.25f, 3.5f,  26.25f, 1.0f);
     for (int i = 0; i < 8; i++) {
         if (pacman_points[i].x >= M1_a.x && pacman_points[i].x <= M1_b.x &&
-            //pacman_points[i].y >= M1_a.y && pacman_points[i].y <= M1_b.y &&
             pacman_points[i].z >= M1_a.z && pacman_points[i].z <= M1_b.z) {
             return 1;
         }
     }
     if (pacman_points[0].z >= M1_a.z && pacman_points[7].z <= M1_b.z &&
-        //pacman_points[0].y >= M1_a.y && pacman_points[7].y <= M1_b.y &&
         pacman_points[7].x < M1_a.x && pacman_points[0].x > M1_b.x) {
         return 1;
     }
@@ -467,13 +465,11 @@ int CollisionMaze(glm::vec4 pacman_position)
     glm::vec4 M2_b = glm::vec4(31.25f, 3.5f,  0.50f, 1.0f);
     for (int i = 0; i < 8; i++) {
         if (pacman_points[i].x >= M2_a.x && pacman_points[i].x <= M2_b.x &&
-            //pacman_points[i].y >= M2_a.y && pacman_points[i].y <= M2_b.y &&
             pacman_points[i].z >= M2_a.z && pacman_points[i].z <= M2_b.z) {
             return 1;
         }
     }
     if (pacman_points[0].x >= M2_a.x && pacman_points[7].x <= M2_b.x &&
-        //pacman_points[0].y >= M2_a.y && pacman_points[7].y <= M2_b.y &&
         pacman_points[7].z < M2_a.z && pacman_points[0].z > M2_b.z) {
         return 1;
     }
@@ -483,13 +479,11 @@ int CollisionMaze(glm::vec4 pacman_position)
     glm::vec4 M3_b = glm::vec4(31.25f, 3.5f, 26.25f, 1.0f);
     for (int i = 0; i < 8; i++) {
         if (pacman_points[i].x >= M3_a.x && pacman_points[i].x <= M3_b.x &&
-            //pacman_points[i].y >= M3_a.y && pacman_points[i].y <= M3_b.y &&
             pacman_points[i].z >= M3_a.z && pacman_points[i].z <= M3_b.z) {
             return 1;
         }
     }
     if (pacman_points[0].x >= M3_a.x && pacman_points[7].x <= M3_b.x &&
-        //pacman_points[0].y >= M3_a.y && pacman_points[7].y <= M3_b.y &&
         pacman_points[7].z < M3_a.z && pacman_points[0].z > M3_b.z) {
         return 1;
     }
@@ -499,13 +493,11 @@ int CollisionMaze(glm::vec4 pacman_position)
     glm::vec4 M4_b = glm::vec4(12.75f, 3.5f, 26.25f, 1.0f);
     for (int i = 0; i < 8; i++) {
         if (pacman_points[i].x >= M4_a.x && pacman_points[i].x <= M4_b.x &&
-           // pacman_points[i].y >= M4_a.y && pacman_points[i].y <= M4_b.y &&
             pacman_points[i].z >= M4_a.z && pacman_points[i].z <= M4_b.z) {
             return 1;
         }
     }
     if (pacman_points[0].z >= M4_a.z && pacman_points[7].z <= M4_b.z &&
-        //pacman_points[0].y >= M4_a.y && pacman_points[7].y <= M4_b.y &&
         pacman_points[7].x < M4_a.x && pacman_points[0].x > M4_b.x) {
         return 1;
     }
@@ -515,13 +507,11 @@ int CollisionMaze(glm::vec4 pacman_position)
     glm::vec4 M5_b = glm::vec4(12.75f, 3.5f, 17.25f, 1.0f);
     for (int i = 0; i < 8; i++) {
         if (pacman_points[i].x >= M5_a.x && pacman_points[i].x <= M5_b.x &&
-            //pacman_points[i].y >= M5_a.y && pacman_points[i].y <= M5_b.y &&
             pacman_points[i].z >= M5_a.z && pacman_points[i].z <= M5_b.z) {
             return 1;
         }
     }
     if (pacman_points[0].x >= M5_a.x && pacman_points[7].x <= M5_b.x &&
-        //pacman_points[0].y >= M5_a.y && pacman_points[7].y <= M5_b.y &&
         pacman_points[7].z < M5_a.z && pacman_points[0].z > M5_b.z) {
         return 1;
     }
@@ -531,13 +521,11 @@ int CollisionMaze(glm::vec4 pacman_position)
     glm::vec4 M6_b = glm::vec4(7.75f, 3.5f, 26.25f, 1.0f);
     for (int i = 0; i < 8; i++) {
         if (pacman_points[i].x >= M6_a.x && pacman_points[i].x <= M6_b.x &&
-            //pacman_points[i].y >= M6_a.y && pacman_points[i].y <= M6_b.y &&
             pacman_points[i].z >= M6_a.z && pacman_points[i].z <= M6_b.z) {
             return 1;
         }
     }
     if (pacman_points[0].z >= M6_a.z && pacman_points[7].z <= M6_b.z &&
-        //pacman_points[0].y >= M6_a.y && pacman_points[7].y <= M6_b.y &&
         pacman_points[7].x < M6_a.x && pacman_points[0].x > M6_b.x) {
         return 1;
     }
@@ -547,13 +535,11 @@ int CollisionMaze(glm::vec4 pacman_position)
     glm::vec4 M7_b = glm::vec4(31.25f, 3.5f,-25.00f, 1.0f);
     for (int i = 0; i < 8; i++) {
         if (pacman_points[i].x >= M7_a.x && pacman_points[i].x <= M7_b.x &&
-            //pacman_points[i].y >= M7_a.y && pacman_points[i].y <= M7_b.y &&
             pacman_points[i].z >= M7_a.z && pacman_points[i].z <= M7_b.z) {
             return 1;
         }
     }
     if (pacman_points[0].x >= M7_a.x && pacman_points[7].x <= M7_b.x &&
-        //pacman_points[0].y >= M7_a.y && pacman_points[7].y <= M7_b.y &&
         pacman_points[7].z < M7_a.z && pacman_points[0].z > M7_b.z) {
         return 1;
     }
@@ -563,13 +549,11 @@ int CollisionMaze(glm::vec4 pacman_position)
     glm::vec4 M8_b = glm::vec4(12.75f, 3.5f,-16.00f, 1.0f);
     for (int i = 0; i < 8; i++) {
         if (pacman_points[i].x >= M8_a.x && pacman_points[i].x <= M8_b.x &&
-            //pacman_points[i].y >= M8_a.y && pacman_points[i].y <= M8_b.y &&
             pacman_points[i].z >= M8_a.z && pacman_points[i].z <= M8_b.z) {
             return 1;
         }
     }
     if (pacman_points[0].z >= M8_a.z && pacman_points[7].z <= M8_b.z &&
-        //pacman_points[0].y >= M8_a.y && pacman_points[7].y <= M8_b.y &&
         pacman_points[7].x < M8_a.x && pacman_points[0].x > M8_b.x) {
         return 1;
     }
@@ -579,13 +563,11 @@ int CollisionMaze(glm::vec4 pacman_position)
     glm::vec4 M9_b = glm::vec4(12.75f, 3.5f,-16.00f, 1.0f);
     for (int i = 0; i < 8; i++) {
         if (pacman_points[i].x >= M9_a.x && pacman_points[i].x <= M9_b.x &&
-            //pacman_points[i].y >= M9_a.y && pacman_points[i].y <= M9_b.y &&
             pacman_points[i].z >= M9_a.z && pacman_points[i].z <= M9_b.z) {
             return 1;
         }
     }
     if (pacman_points[0].x >= M9_a.x && pacman_points[7].x <= M9_b.x &&
-       // pacman_points[0].y >= M9_a.y && pacman_points[7].y <= M9_b.y &&
         pacman_points[7].z < M9_a.z && pacman_points[0].z > M9_b.z) {
         return 1;
     }
@@ -595,13 +577,11 @@ int CollisionMaze(glm::vec4 pacman_position)
     glm::vec4 M10_b = glm::vec4(7.75f, 3.5f,-16.00f, 1.0f);
     for (int i = 0; i < 8; i++) {
         if (pacman_points[i].x >= M10_a.x && pacman_points[i].x <= M10_b.x &&
-            //pacman_points[i].y >= M10_a.y && pacman_points[i].y <= M10_b.y &&
             pacman_points[i].z >= M10_a.z && pacman_points[i].z <= M10_b.z) {
             return 1;
         }
     }
     if (pacman_points[0].z >= M10_a.z && pacman_points[7].z <= M10_b.z &&
-        //pacman_points[0].y >= M10_a.y && pacman_points[7].y <= M10_b.y &&
         pacman_points[7].x < M10_a.x && pacman_points[0].x > M10_b.x) {
         return 1;
     }
@@ -611,13 +591,11 @@ int CollisionMaze(glm::vec4 pacman_position)
     glm::vec4 M11_b = glm::vec4(2.25f, 3.5f,-16.00f, 1.0f);
     for (int i = 0; i < 8; i++) {
         if (pacman_points[i].x >= M11_a.x && pacman_points[i].x <= M11_b.x &&
-           // pacman_points[i].y >= M11_a.y && pacman_points[i].y <= M11_b.y &&
             pacman_points[i].z >= M11_a.z && pacman_points[i].z <= M11_b.z) {
             return 1;
         }
     }
     if (pacman_points[0].z >= M11_a.z && pacman_points[7].z <= M11_b.z &&
-       // pacman_points[0].y >= M11_a.y && pacman_points[7].y <= M11_b.y &&
         pacman_points[7].x < M11_a.x && pacman_points[0].x > M11_b.x) {
         return 1;
     }
@@ -627,13 +605,11 @@ int CollisionMaze(glm::vec4 pacman_position)
     glm::vec4 M12_b = glm::vec4( 2.25f, 3.5f,-16.00f, 1.0f);
     for (int i = 0; i < 8; i++) {
         if (pacman_points[i].x >= M12_a.x && pacman_points[i].x <= M12_b.x &&
-           // pacman_points[i].y >= M12_a.y && pacman_points[i].y <= M12_b.y &&
             pacman_points[i].z >= M12_a.z && pacman_points[i].z <= M12_b.z) {
             return 1;
         }
     }
     if (pacman_points[0].x >= M12_a.x && pacman_points[7].x <= M12_b.x &&
-       // pacman_points[0].y >= M12_a.y && pacman_points[7].y <= M12_b.y &&
         pacman_points[7].z < M12_a.z && pacman_points[0].z > M12_b.z) {
         return 1;
     }
@@ -643,13 +619,11 @@ int CollisionMaze(glm::vec4 pacman_position)
     glm::vec4 M13_b = glm::vec4(-3.50f, 3.5f,-16.00f, 1.0f);
     for (int i = 0; i < 8; i++) {
         if (pacman_points[i].x >= M13_a.x && pacman_points[i].x <= M13_b.x &&
-          //  pacman_points[i].y >= M13_a.y && pacman_points[i].y <= M13_b.y &&
             pacman_points[i].z >= M13_a.z && pacman_points[i].z <= M13_b.z) {
             return 1;
         }
     }
     if (pacman_points[0].z >= M13_a.z && pacman_points[7].z <= M13_b.z &&
-        //pacman_points[0].y >= M13_a.y && pacman_points[7].y <= M13_b.y &&
         pacman_points[7].x < M13_a.x && pacman_points[0].x > M13_b.x) {
         return 1;
     }
@@ -659,13 +633,11 @@ int CollisionMaze(glm::vec4 pacman_position)
     glm::vec4 M14_b = glm::vec4(- 3.50f, 3.5f,-25.00f, 1.0f);
     for (int i = 0; i < 8; i++) {
         if (pacman_points[i].x >= M14_a.x && pacman_points[i].x <= M14_b.x &&
-          //  pacman_points[i].y >= M14_a.y && pacman_points[i].y <= M14_b.y &&
             pacman_points[i].z >= M14_a.z && pacman_points[i].z <= M14_b.z) {
             return 1;
         }
     }
     if (pacman_points[0].x >= M14_a.x && pacman_points[7].x <= M14_b.x &&
-       // pacman_points[0].y >= M14_a.y && pacman_points[7].y <= M14_b.y &&
         pacman_points[7].z < M14_a.z && pacman_points[0].z > M14_b.z) {
         return 1;
     }
@@ -675,13 +647,11 @@ int CollisionMaze(glm::vec4 pacman_position)
     glm::vec4 M15_b = glm::vec4(-14.50f, 3.5f,-20.75f, 1.0f);
     for (int i = 0; i < 8; i++) {
         if (pacman_points[i].x >= M15_a.x && pacman_points[i].x <= M15_b.x &&
-         //   pacman_points[i].y >= M15_a.y && pacman_points[i].y <= M15_b.y &&
             pacman_points[i].z >= M15_a.z && pacman_points[i].z <= M15_b.z) {
             return 1;
         }
     }
     if (pacman_points[0].z >= M15_a.z && pacman_points[7].z <= M15_b.z &&
-       // pacman_points[0].y >= M15_a.y && pacman_points[7].y <= M15_b.y &&
         pacman_points[7].x < M15_a.x && pacman_points[0].x > M15_b.x) {
         return 1;
     }
@@ -691,13 +661,11 @@ int CollisionMaze(glm::vec4 pacman_position)
     glm::vec4 M16_b = glm::vec4(-25.25f, 3.5f, 26.25f, 1.0f);
     for (int i = 0; i < 8; i++) {
         if (pacman_points[i].x >= M16_a.x && pacman_points[i].x <= M16_b.x &&
-         //   pacman_points[i].y >= M16_a.y && pacman_points[i].y <= M16_b.y &&
             pacman_points[i].z >= M16_a.z && pacman_points[i].z <= M16_b.z) {
             return 1;
         }
     }
     if (pacman_points[0].z >= M16_a.z && pacman_points[7].z <= M16_b.z &&
-      //  pacman_points[0].y >= M16_a.y && pacman_points[7].y <= M16_b.y &&
         pacman_points[7].x < M16_a.x && pacman_points[0].x > M16_b.x) {
         return 1;
     }
@@ -707,13 +675,11 @@ int CollisionMaze(glm::vec4 pacman_position)
     glm::vec4 M17_b = glm::vec4(- 3.50f, 3.5f, 26.25f, 1.0f);
     for (int i = 0; i < 8; i++) {
         if (pacman_points[i].x >= M17_a.x && pacman_points[i].x <= M17_b.x &&
-          //  pacman_points[i].y >= M17_a.y && pacman_points[i].y <= M17_b.y &&
             pacman_points[i].z >= M17_a.z && pacman_points[i].z <= M17_b.z) {
             return 1;
         }
     }
     if (pacman_points[0].x >= M17_a.x && pacman_points[7].x <= M17_b.x &&
-      //  pacman_points[0].y >= M17_a.y && pacman_points[7].y <= M17_b.y &&
         pacman_points[7].z < M17_a.z && pacman_points[0].z > M17_b.z) {
         return 1;
     }
@@ -723,13 +689,11 @@ int CollisionMaze(glm::vec4 pacman_position)
     glm::vec4 M18_b = glm::vec4(-14.50f, 3.5f, 26.25f, 1.0f);
     for (int i = 0; i < 8; i++) {
         if (pacman_points[i].x >= M18_a.x && pacman_points[i].x <= M18_b.x &&
-         //   pacman_points[i].y >= M18_a.y && pacman_points[i].y <= M18_b.y &&
             pacman_points[i].z >= M18_a.z && pacman_points[i].z <= M18_b.z) {
             return 1;
         }
     }
     if (pacman_points[0].z >= M18_a.z && pacman_points[7].z <= M18_b.z &&
-      //  pacman_points[0].y >= M18_a.y && pacman_points[7].y <= M18_b.y &&
         pacman_points[7].x < M18_a.x && pacman_points[0].x > M18_b.x) {
         return 1;
     }
@@ -739,13 +703,11 @@ int CollisionMaze(glm::vec4 pacman_position)
     glm::vec4 M19_b = glm::vec4(-3.50f, 3.5f, 26.25f, 1.0f);
     for (int i = 0; i < 8; i++) {
         if (pacman_points[i].x >= M19_a.x && pacman_points[i].x <= M19_b.x &&
-        //    pacman_points[i].y >= M19_a.y && pacman_points[i].y <= M19_b.y &&
             pacman_points[i].z >= M19_a.z && pacman_points[i].z <= M19_b.z) {
             return 1;
         }
     }
     if (pacman_points[0].z >= M19_a.z && pacman_points[7].z <= M19_b.z &&
-      //  pacman_points[0].y >= M19_a.y && pacman_points[7].y <= M19_b.y &&
         pacman_points[7].x < M19_a.x && pacman_points[0].x > M19_b.x) {
         return 1;
     }
@@ -755,13 +717,11 @@ int CollisionMaze(glm::vec4 pacman_position)
     glm::vec4 M20_b = glm::vec4( 2.25f, 3.5f, 17.25f, 1.0f);
     for (int i = 0; i < 8; i++) {
         if (pacman_points[i].x >= M20_a.x && pacman_points[i].x <= M20_b.x &&
-        //    pacman_points[i].y >= M20_a.y && pacman_points[i].y <= M20_b.y &&
             pacman_points[i].z >= M20_a.z && pacman_points[i].z <= M20_b.z) {
             return 1;
         }
     }
     if (pacman_points[0].x >= M20_a.x && pacman_points[7].x <= M20_b.x &&
-       // pacman_points[0].y >= M20_a.y && pacman_points[7].y <= M20_b.y &&
         pacman_points[7].z < M20_a.z && pacman_points[0].z > M20_b.z) {
         return 1;
     }
@@ -771,13 +731,11 @@ int CollisionMaze(glm::vec4 pacman_position)
     glm::vec4 M21_b = glm::vec4(2.25f, 3.5f, 26.25f, 1.0f);
     for (int i = 0; i < 8; i++) {
         if (pacman_points[i].x >= M21_a.x && pacman_points[i].x <= M21_b.x &&
-        //    pacman_points[i].y >= M21_a.y && pacman_points[i].y <= M21_b.y &&
             pacman_points[i].z >= M21_a.z && pacman_points[i].z <= M21_b.z) {
             return 1;
         }
     }
     if (pacman_points[0].z >= M21_a.z && pacman_points[7].z <= M21_b.z &&
-      //  pacman_points[0].y >= M21_a.y && pacman_points[7].y <= M21_b.y &&
         pacman_points[7].x < M21_a.x && pacman_points[0].x > M21_b.x) {
         return 1;
     }

@@ -1,3 +1,7 @@
+// Porto Alegre, outubro de 2022
+// Pedro Company Beck
+// Wagner Gomes Ferreira
+//
 //     Universidade Federal do Rio Grande do Sul
 //             Instituto de Informática
 //       Departamento de Informática Aplicada
@@ -270,7 +274,6 @@ double g_LastCursorPosX, g_LastCursorPosY;
 
 // Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
 // Veja slides 195-227 e 229-234 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
-//glm::vec4 camera_position_c  = glm::vec4(0.0f, 20.0f, g_CameraDistance, 1.0f); // Ponto "c", centro da câmera
 glm::vec4 pacman_position_c  = glm::vec4(-13.0f, 1.0f, 0.0f, 1.0f); // Ponto central do pacman
 glm::vec4 camera_position_c  = glm::vec4(pacman_position_c.x, pacman_position_c.y, pacman_position_c.z, 1.0f); // Ponto "c", centro da câmera
 
@@ -290,7 +293,7 @@ float rotate_z = 0.0f;
 int main(int argc, char* argv[])
 {
     // esconder o terminal
-  //  ShowWindow(GetConsoleWindow(), SW_HIDE);
+    ShowWindow(GetConsoleWindow(), SW_HIDE);
 
     // Inicializamos a biblioteca GLFW, utilizada para criar uma janela do
     // sistema operacional, onde poderemos renderizar com OpenGL.
@@ -463,7 +466,6 @@ int main(int argc, char* argv[])
             prev_time = current_time;
 
             // Vetor que projeta w no plano X,Z, evitando que a camera oscile de altura
-            //glm::vec4 projected_w  = glm::vec4(vetor_w.x, vetor_w.y, vetor_w.z, vetor_w.w); // usado quando se quer andar livremente pelo mapa, podendo subir e descer na altura
             glm::vec4 projected_w  = glm::vec4(vetor_w.x, 0.0f, vetor_w.z, vetor_w.w);    // usado para andar na altura certa no labirinto, não podendo mudar a altura
             projected_w /= norm(projected_w);
             // Realiza movimentação de objetos
@@ -785,10 +787,6 @@ int main(int argc, char* argv[])
             }
 
 
-            // Imprimimos na tela os ângulos de Euler que controlam a rotação do
-            // terceiro cubo.
-            //TextRendering_ShowEulerAngles(window);
-
             TextRendering_ShowPositionCamera(window);
             TextRendering_ShowLivesAndPoints(window);
 
@@ -798,8 +796,6 @@ int main(int argc, char* argv[])
             // Imprimimos na tela informação sobre o número de quadros renderizados
             // por segundo (frames per second).
             TextRendering_ShowFramesPerSecond(window);
-
-            // TextRendering_ShowModelViewProjection(window, projection, view, view, camera_position_c);
         }
         else {
             if (g_GameWon) {
@@ -1173,8 +1169,6 @@ void InitPoints() {
 
                 g_Points[point.id] = point;
 
-                //InsertLightsPositions(point.id, point.position);
-
                 actual_step += steps;
                 actual_id++;
             }
@@ -1186,8 +1180,6 @@ void InitPoints() {
                 point.taken = 0;
 
                 g_Points[point.id] = point;
-
-                //InsertLightsPositions(point.id, point.position);
 
                 actual_step += steps;
                 actual_id++;
@@ -1405,8 +1397,6 @@ void LoadTextureImage(const char* filename)
     glGenSamplers(1, &sampler_id);
 
     // Veja slides 95-96 do documento Aula_20_Mapeamento_de_Texturas.pdf
-    //glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    //glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
@@ -1453,7 +1443,6 @@ void DrawVirtualObject(const char* object_name)
     // g_VirtualScene[""] dentro da função BuildTrianglesAndAddToVirtualScene(), e veja
     // a documentação da função glDrawElements() em
     // http://docs.gl/gl3/glDrawElements.
-    //printf("%s - %i \n", object_name, g_VirtualScene[object_name].num_indices);
     glDrawElements(
         g_VirtualScene[object_name].rendering_mode,
         g_VirtualScene[object_name].num_indices,
@@ -1690,8 +1679,6 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
 
         theobject.bbox_min = bbox_min;
         theobject.bbox_max = bbox_max;
-
-        //std::cout << model->shapes[shape].name << std::endl;
 
         g_VirtualScene[model->shapes[shape].name] = theobject;
     }
@@ -2128,10 +2115,10 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     {
         if (g_ThirdPerson){
             g_ThirdPerson = false;
-            //g_CameraDistance = 0.0f;
+
         } else {
             g_ThirdPerson = true;
-            //g_CameraDistance = 2.5f;
+
         }
     }
 
@@ -2561,9 +2548,6 @@ void PrintObjModelInfo(ObjModel* model)
 void TextRendering_InitialScreen(GLFWwindow* window)
 {
     float charwidth = TextRendering_CharWidth(window);
-
-    //TextRendering_PrintString(window, "       PACMAN       ", -0.40f,   0.1f, 2.0f);
-    //TextRendering_PrintString(window, "Press Enter to Start", -0.40f,  -0.1f, 2.0f);
 
     TextRendering_PrintString(window, "       PACMAN       ", 0.0f - (2.2 * 9 * charwidth),     0.1f, 2.0f);
     TextRendering_PrintString(window, "Press Enter to Start", 0.0f - (2.2 * 9 * charwidth),    -0.1f, 2.0f);
